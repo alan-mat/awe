@@ -21,28 +21,29 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Request message for Post method
-type PostRequest struct {
+type ChatRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          string                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	User          string                 `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
+	Args          map[string]string      `protobuf:"bytes,3,rep,name=args,proto3" json:"args,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PostRequest) Reset() {
-	*x = PostRequest{}
+func (x *ChatRequest) Reset() {
+	*x = ChatRequest{}
 	mi := &file_awe_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PostRequest) String() string {
+func (x *ChatRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PostRequest) ProtoMessage() {}
+func (*ChatRequest) ProtoMessage() {}
 
-func (x *PostRequest) ProtoReflect() protoreflect.Message {
+func (x *ChatRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_awe_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -54,41 +55,56 @@ func (x *PostRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PostRequest.ProtoReflect.Descriptor instead.
-func (*PostRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ChatRequest.ProtoReflect.Descriptor instead.
+func (*ChatRequest) Descriptor() ([]byte, []int) {
 	return file_awe_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *PostRequest) GetData() string {
+func (x *ChatRequest) GetQuery() string {
 	if x != nil {
-		return x.Data
+		return x.Query
 	}
 	return ""
 }
 
-// Response message for Post method
-type PostResponse struct {
+func (x *ChatRequest) GetUser() string {
+	if x != nil {
+		return x.User
+	}
+	return ""
+}
+
+func (x *ChatRequest) GetArgs() map[string]string {
+	if x != nil {
+		return x.Args
+	}
+	return nil
+}
+
+type ChatResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	MsgId         int32                  `protobuf:"varint,1,opt,name=msg_id,json=msgId,proto3" json:"msg_id,omitempty"`
+	TraceId       string                 `protobuf:"bytes,2,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	Status        string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	Content       string                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PostResponse) Reset() {
-	*x = PostResponse{}
+func (x *ChatResponse) Reset() {
+	*x = ChatResponse{}
 	mi := &file_awe_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PostResponse) String() string {
+func (x *ChatResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PostResponse) ProtoMessage() {}
+func (*ChatResponse) ProtoMessage() {}
 
-func (x *PostResponse) ProtoReflect() protoreflect.Message {
+func (x *ChatResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_awe_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -100,142 +116,59 @@ func (x *PostResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PostResponse.ProtoReflect.Descriptor instead.
-func (*PostResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ChatResponse.ProtoReflect.Descriptor instead.
+func (*ChatResponse) Descriptor() ([]byte, []int) {
 	return file_awe_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *PostResponse) GetSuccess() bool {
+func (x *ChatResponse) GetMsgId() int32 {
 	if x != nil {
-		return x.Success
+		return x.MsgId
 	}
-	return false
+	return 0
 }
 
-func (x *PostResponse) GetMessage() string {
+func (x *ChatResponse) GetTraceId() string {
 	if x != nil {
-		return x.Message
+		return x.TraceId
 	}
 	return ""
 }
 
-// Request message for Stream method
-type StreamRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Count         int32                  `protobuf:"varint,1,opt,name=count,proto3" json:"count,omitempty"` // Optional field to specify how many responses to stream
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StreamRequest) Reset() {
-	*x = StreamRequest{}
-	mi := &file_awe_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StreamRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StreamRequest) ProtoMessage() {}
-
-func (x *StreamRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_awe_proto_msgTypes[2]
+func (x *ChatResponse) GetStatus() string {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
+		return x.Status
 	}
-	return mi.MessageOf(x)
+	return ""
 }
 
-// Deprecated: Use StreamRequest.ProtoReflect.Descriptor instead.
-func (*StreamRequest) Descriptor() ([]byte, []int) {
-	return file_awe_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *StreamRequest) GetCount() int32 {
+func (x *ChatResponse) GetContent() string {
 	if x != nil {
-		return x.Count
+		return x.Content
 	}
-	return 0
-}
-
-// Response message for Stream method
-type StreamResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          int32                  `protobuf:"varint,1,opt,name=data,proto3" json:"data,omitempty"`
-	Timestamp     int64                  `protobuf:"varint,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StreamResponse) Reset() {
-	*x = StreamResponse{}
-	mi := &file_awe_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StreamResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StreamResponse) ProtoMessage() {}
-
-func (x *StreamResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_awe_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StreamResponse.ProtoReflect.Descriptor instead.
-func (*StreamResponse) Descriptor() ([]byte, []int) {
-	return file_awe_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *StreamResponse) GetData() int32 {
-	if x != nil {
-		return x.Data
-	}
-	return 0
-}
-
-func (x *StreamResponse) GetTimestamp() int64 {
-	if x != nil {
-		return x.Timestamp
-	}
-	return 0
+	return ""
 }
 
 var File_awe_proto protoreflect.FileDescriptor
 
 const file_awe_proto_rawDesc = "" +
 	"\n" +
-	"\tawe.proto\x12\x03awe\"!\n" +
-	"\vPostRequest\x12\x12\n" +
-	"\x04data\x18\x01 \x01(\tR\x04data\"B\n" +
-	"\fPostResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"%\n" +
-	"\rStreamRequest\x12\x14\n" +
-	"\x05count\x18\x01 \x01(\x05R\x05count\"B\n" +
-	"\x0eStreamResponse\x12\x12\n" +
-	"\x04data\x18\x01 \x01(\x05R\x04data\x12\x1c\n" +
-	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp2r\n" +
+	"\tawe.proto\x12\x03awe\"\xa0\x01\n" +
+	"\vChatRequest\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\x12\x12\n" +
+	"\x04user\x18\x02 \x01(\tR\x04user\x12.\n" +
+	"\x04args\x18\x03 \x03(\v2\x1a.awe.ChatRequest.ArgsEntryR\x04args\x1a7\n" +
+	"\tArgsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"r\n" +
+	"\fChatResponse\x12\x15\n" +
+	"\x06msg_id\x18\x01 \x01(\x05R\x05msgId\x12\x19\n" +
+	"\btrace_id\x18\x02 \x01(\tR\atraceId\x12\x16\n" +
+	"\x06status\x18\x03 \x01(\tR\x06status\x12\x18\n" +
+	"\acontent\x18\x04 \x01(\tR\acontent2=\n" +
 	"\n" +
-	"AWEService\x12-\n" +
-	"\x04Post\x12\x10.awe.PostRequest\x1a\x11.awe.PostResponse\"\x00\x125\n" +
-	"\x06Stream\x12\x12.awe.StreamRequest\x1a\x13.awe.StreamResponse\"\x000\x01B(Z&github.com/alan-mat/awe/internal/protob\x06proto3"
+	"AWEService\x12/\n" +
+	"\x04Chat\x12\x10.awe.ChatRequest\x1a\x11.awe.ChatResponse\"\x000\x01B(Z&github.com/alan-mat/awe/internal/protob\x06proto3"
 
 var (
 	file_awe_proto_rawDescOnce sync.Once
@@ -249,23 +182,21 @@ func file_awe_proto_rawDescGZIP() []byte {
 	return file_awe_proto_rawDescData
 }
 
-var file_awe_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_awe_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_awe_proto_goTypes = []any{
-	(*PostRequest)(nil),    // 0: awe.PostRequest
-	(*PostResponse)(nil),   // 1: awe.PostResponse
-	(*StreamRequest)(nil),  // 2: awe.StreamRequest
-	(*StreamResponse)(nil), // 3: awe.StreamResponse
+	(*ChatRequest)(nil),  // 0: awe.ChatRequest
+	(*ChatResponse)(nil), // 1: awe.ChatResponse
+	nil,                  // 2: awe.ChatRequest.ArgsEntry
 }
 var file_awe_proto_depIdxs = []int32{
-	0, // 0: awe.AWEService.Post:input_type -> awe.PostRequest
-	2, // 1: awe.AWEService.Stream:input_type -> awe.StreamRequest
-	1, // 2: awe.AWEService.Post:output_type -> awe.PostResponse
-	3, // 3: awe.AWEService.Stream:output_type -> awe.StreamResponse
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	2, // 0: awe.ChatRequest.args:type_name -> awe.ChatRequest.ArgsEntry
+	0, // 1: awe.AWEService.Chat:input_type -> awe.ChatRequest
+	1, // 2: awe.AWEService.Chat:output_type -> awe.ChatResponse
+	2, // [2:3] is the sub-list for method output_type
+	1, // [1:2] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_awe_proto_init() }
@@ -279,7 +210,7 @@ func file_awe_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_awe_proto_rawDesc), len(file_awe_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

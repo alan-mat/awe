@@ -2,13 +2,20 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"io"
 	"log"
-	"math/rand"
 	"net"
-	"time"
+
+	"github.com/joho/godotenv"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	pb "github.com/alan-mat/awe/internal/proto"
-	"google.golang.org/grpc"
+	"github.com/alan-mat/awe/internal/provider"
 )
 
 // Server implements the AWEService
@@ -16,48 +23,56 @@ type server struct {
 	pb.UnimplementedAWEServiceServer
 }
 
-// Post implements the unary RPC method
-func (s *server) Post(ctx context.Context, req *pb.PostRequest) (*pb.PostResponse, error) {
-	log.Printf("Received Post request with data: %s", req.Data)
-	return &pb.PostResponse{
-		Success: true,
-		Message: "Request processed successfully",
-	}, nil
-}
+func (s *server) Chat(req *pb.ChatRequest, stream pb.AWEService_ChatServer) error {
+	log.Printf("received chat request from user '%s' with query '%s'", req.User, req.Query)
 
-// Stream implements the server streaming RPC method
-func (s *server) Stream(req *pb.StreamRequest, stream pb.AWEService_StreamServer) error {
-	log.Printf("Starting stream, will send %d responses", req.Count)
-
-	// Default to 10 responses if count is 0
-	count := req.Count
-	if count <= 0 {
-		count = 10
+	prov, err := provider.NewLMProvider(provider.LMProviderTypeOpenAI)
+	if err != nil {
+		log.Printf("error creating new lmprovider, cancelling Chat request")
+		return status.Errorf(codes.Internal, "something went wrong")
 	}
 
-	// Create random number generator
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	creq := provider.CompletionRequest{
+		Query: req.Query,
+	}
+	cs, err := prov.CreateCompletionStream(context.Background(), creq)
+	if err != nil {
+		log.Printf("error creating chat completion stream, cancelling Chat request")
+		return status.Errorf(codes.Internal, "something went wrong")
+	}
+	defer cs.Close()
 
-	// Send random integers every 0.5 seconds
-	for i := int32(0); i < count; i++ {
-		// Generate random integer
-		randomInt := rng.Int31n(1000)
-
-		// Create response
-		resp := &pb.StreamResponse{
-			Data:      randomInt,
-			Timestamp: time.Now().Unix(),
+	trace_id := "test-trace"
+	msg_id := int32(0)
+	for {
+		chunk, err := cs.Recv()
+		if errors.Is(err, io.EOF) {
+			log.Printf("provider stream finished")
+			break
 		}
 
-		// Send the response
+		if err != nil {
+			fmt.Printf("provider stream error: %v", err)
+			resp := &pb.ChatResponse{
+				MsgId:   msg_id,
+				TraceId: trace_id,
+				Status:  "Provider stream error!",
+			}
+			if err := stream.Send(resp); err != nil {
+				return err
+			}
+			break
+		}
+
+		resp := &pb.ChatResponse{
+			MsgId:   msg_id,
+			TraceId: trace_id,
+			Content: chunk,
+		}
 		if err := stream.Send(resp); err != nil {
 			return err
 		}
-
-		log.Printf("Sent random data: %d", randomInt)
-
-		// Wait 0.5 seconds before sending next data
-		time.Sleep(500 * time.Millisecond)
+		msg_id += 1
 	}
 
 	log.Println("Stream completed")
@@ -65,13 +80,16 @@ func (s *server) Stream(req *pb.StreamRequest, stream pb.AWEService_StreamServer
 }
 
 func main() {
-	// Listen on port 50051
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
-	// Create gRPC server
 	s := grpc.NewServer()
 	pb.RegisterAWEServiceServer(s, &server{})
 

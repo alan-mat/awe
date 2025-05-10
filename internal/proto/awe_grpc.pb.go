@@ -19,20 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AWEService_Post_FullMethodName   = "/awe.AWEService/Post"
-	AWEService_Stream_FullMethodName = "/awe.AWEService/Stream"
+	AWEService_Chat_FullMethodName = "/awe.AWEService/Chat"
 )
 
 // AWEServiceClient is the client API for AWEService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// AWEService with both unary and streaming RPCs
 type AWEServiceClient interface {
-	// Post is a unary RPC that returns a status response
-	Post(ctx context.Context, in *PostRequest, opts ...grpc.CallOption) (*PostResponse, error)
-	// Stream is a server streaming RPC that periodically sends random integer data
-	Stream(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamResponse], error)
+	Chat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatResponse], error)
 }
 
 type aWEServiceClient struct {
@@ -43,23 +37,13 @@ func NewAWEServiceClient(cc grpc.ClientConnInterface) AWEServiceClient {
 	return &aWEServiceClient{cc}
 }
 
-func (c *aWEServiceClient) Post(ctx context.Context, in *PostRequest, opts ...grpc.CallOption) (*PostResponse, error) {
+func (c *aWEServiceClient) Chat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PostResponse)
-	err := c.cc.Invoke(ctx, AWEService_Post_FullMethodName, in, out, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &AWEService_ServiceDesc.Streams[0], AWEService_Chat_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
-}
-
-func (c *aWEServiceClient) Stream(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &AWEService_ServiceDesc.Streams[0], AWEService_Stream_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[StreamRequest, StreamResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[ChatRequest, ChatResponse]{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -70,18 +54,13 @@ func (c *aWEServiceClient) Stream(ctx context.Context, in *StreamRequest, opts .
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type AWEService_StreamClient = grpc.ServerStreamingClient[StreamResponse]
+type AWEService_ChatClient = grpc.ServerStreamingClient[ChatResponse]
 
 // AWEServiceServer is the server API for AWEService service.
 // All implementations must embed UnimplementedAWEServiceServer
 // for forward compatibility.
-//
-// AWEService with both unary and streaming RPCs
 type AWEServiceServer interface {
-	// Post is a unary RPC that returns a status response
-	Post(context.Context, *PostRequest) (*PostResponse, error)
-	// Stream is a server streaming RPC that periodically sends random integer data
-	Stream(*StreamRequest, grpc.ServerStreamingServer[StreamResponse]) error
+	Chat(*ChatRequest, grpc.ServerStreamingServer[ChatResponse]) error
 	mustEmbedUnimplementedAWEServiceServer()
 }
 
@@ -92,11 +71,8 @@ type AWEServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAWEServiceServer struct{}
 
-func (UnimplementedAWEServiceServer) Post(context.Context, *PostRequest) (*PostResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Post not implemented")
-}
-func (UnimplementedAWEServiceServer) Stream(*StreamRequest, grpc.ServerStreamingServer[StreamResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method Stream not implemented")
+func (UnimplementedAWEServiceServer) Chat(*ChatRequest, grpc.ServerStreamingServer[ChatResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method Chat not implemented")
 }
 func (UnimplementedAWEServiceServer) mustEmbedUnimplementedAWEServiceServer() {}
 func (UnimplementedAWEServiceServer) testEmbeddedByValue()                    {}
@@ -119,34 +95,16 @@ func RegisterAWEServiceServer(s grpc.ServiceRegistrar, srv AWEServiceServer) {
 	s.RegisterService(&AWEService_ServiceDesc, srv)
 }
 
-func _AWEService_Post_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PostRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AWEServiceServer).Post(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AWEService_Post_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AWEServiceServer).Post(ctx, req.(*PostRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AWEService_Stream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(StreamRequest)
+func _AWEService_Chat_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ChatRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(AWEServiceServer).Stream(m, &grpc.GenericServerStream[StreamRequest, StreamResponse]{ServerStream: stream})
+	return srv.(AWEServiceServer).Chat(m, &grpc.GenericServerStream[ChatRequest, ChatResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type AWEService_StreamServer = grpc.ServerStreamingServer[StreamResponse]
+type AWEService_ChatServer = grpc.ServerStreamingServer[ChatResponse]
 
 // AWEService_ServiceDesc is the grpc.ServiceDesc for AWEService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -154,16 +112,11 @@ type AWEService_StreamServer = grpc.ServerStreamingServer[StreamResponse]
 var AWEService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "awe.AWEService",
 	HandlerType: (*AWEServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Post",
-			Handler:    _AWEService_Post_Handler,
-		},
-	},
+	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Stream",
-			Handler:       _AWEService_Stream_Handler,
+			StreamName:    "Chat",
+			Handler:       _AWEService_Chat_Handler,
 			ServerStreams: true,
 		},
 	},
