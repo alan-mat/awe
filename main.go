@@ -5,8 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net"
+	"os"
 
 	"github.com/joho/godotenv"
 
@@ -24,11 +25,11 @@ type server struct {
 }
 
 func (s *server) Chat(req *pb.ChatRequest, stream pb.AWEService_ChatServer) error {
-	log.Printf("received chat request from user '%s' with query '%s'", req.User, req.Query)
+	slog.Debug("received chat request", "user", req.User, "query", req.Query)
 
 	prov, err := provider.NewLMProvider(provider.LMProviderTypeOpenAI)
 	if err != nil {
-		log.Printf("error creating new lmprovider, cancelling Chat request")
+		slog.Warn("error creating new lmprovider, cancelling Chat request")
 		return status.Errorf(codes.Internal, "something went wrong")
 	}
 
@@ -37,7 +38,7 @@ func (s *server) Chat(req *pb.ChatRequest, stream pb.AWEService_ChatServer) erro
 	}
 	cs, err := prov.CreateCompletionStream(context.Background(), creq)
 	if err != nil {
-		log.Printf("error creating chat completion stream, cancelling Chat request")
+		slog.Warn("error creating chat completion stream, cancelling Chat request")
 		return status.Errorf(codes.Internal, "something went wrong")
 	}
 	defer cs.Close()
@@ -47,7 +48,7 @@ func (s *server) Chat(req *pb.ChatRequest, stream pb.AWEService_ChatServer) erro
 	for {
 		chunk, err := cs.Recv()
 		if errors.Is(err, io.EOF) {
-			log.Printf("provider stream finished")
+			slog.Debug("provider stream finished")
 			break
 		}
 
@@ -75,26 +76,31 @@ func (s *server) Chat(req *pb.ChatRequest, stream pb.AWEService_ChatServer) erro
 		msg_id += 1
 	}
 
-	log.Println("Stream completed")
+	slog.Debug("stream completed")
 	return nil
 }
 
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		slog.Error("Error loading .env file")
+		os.Exit(1)
 	}
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	slog.SetDefault(logger)
 
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		slog.Error("failed to start server", "err", err)
 	}
 
 	s := grpc.NewServer()
 	pb.RegisterAWEServiceServer(s, &server{})
 
-	log.Println("Server starting on :50051")
+	slog.Info("Server starting on :50051")
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
+		slog.Error("failed to serve", "err", err)
+		os.Exit(1)
 	}
 }
