@@ -1,0 +1,35 @@
+syntax = "proto3";
+package awe;
+
+option go_package = "github.com/alan-mat/awe/internal/proto";
+
+// Request message for Post method
+message PostRequest {
+  string data = 1;
+}
+
+// Response message for Post method
+message PostResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Request message for Stream method
+message StreamRequest {
+  int32 count = 1; // Optional field to specify how many responses to stream
+}
+
+// Response message for Stream method
+message StreamResponse {
+  int32 data = 1;
+  int64 timestamp = 2;
+}
+
+// AWEService with both unary and streaming RPCs
+service AWEService {
+  // Post is a unary RPC that returns a status response
+  rpc Post(PostRequest) returns (PostResponse) {}
+  
+  // Stream is a server streaming RPC that periodically sends random integer data
+  rpc Stream(StreamRequest) returns (stream StreamResponse) {}
+}
