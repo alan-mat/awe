@@ -11,6 +11,7 @@ var (
 
 const (
 	LMProviderTypeOpenAI = iota
+	LMProviderTypeGemini
 )
 
 type LMProviderType int
@@ -23,6 +24,8 @@ func NewLMProvider(t LMProviderType) (LMProvider, error) {
 	switch t {
 	case LMProviderTypeOpenAI:
 		return NewOpenAIProvider(), nil
+	case LMProviderTypeGemini:
+		return NewGeminiProvider(), nil
 	default:
 		return nil, ErrInvalidLMProviderType
 	}

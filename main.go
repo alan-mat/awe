@@ -27,7 +27,7 @@ type server struct {
 func (s *server) Chat(req *pb.ChatRequest, stream pb.AWEService_ChatServer) error {
 	slog.Debug("received chat request", "user", req.User, "query", req.Query)
 
-	prov, err := provider.NewLMProvider(provider.LMProviderTypeOpenAI)
+	prov, err := provider.NewLMProvider(provider.LMProviderTypeGemini)
 	if err != nil {
 		slog.Warn("error creating new lmprovider, cancelling Chat request")
 		return status.Errorf(codes.Internal, "something went wrong")
