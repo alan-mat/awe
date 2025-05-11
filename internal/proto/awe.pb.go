@@ -21,18 +21,120 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type ChatRole int32
+
+const (
+	ChatRole_UNSPECIFIED ChatRole = 0
+	ChatRole_USER        ChatRole = 1
+	ChatRole_ASSISTANT   ChatRole = 2
+)
+
+// Enum value maps for ChatRole.
+var (
+	ChatRole_name = map[int32]string{
+		0: "UNSPECIFIED",
+		1: "USER",
+		2: "ASSISTANT",
+	}
+	ChatRole_value = map[string]int32{
+		"UNSPECIFIED": 0,
+		"USER":        1,
+		"ASSISTANT":   2,
+	}
+)
+
+func (x ChatRole) Enum() *ChatRole {
+	p := new(ChatRole)
+	*p = x
+	return p
+}
+
+func (x ChatRole) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ChatRole) Descriptor() protoreflect.EnumDescriptor {
+	return file_awe_proto_enumTypes[0].Descriptor()
+}
+
+func (ChatRole) Type() protoreflect.EnumType {
+	return &file_awe_proto_enumTypes[0]
+}
+
+func (x ChatRole) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ChatRole.Descriptor instead.
+func (ChatRole) EnumDescriptor() ([]byte, []int) {
+	return file_awe_proto_rawDescGZIP(), []int{0}
+}
+
+type ChatMessage struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Role          ChatRole               `protobuf:"varint,1,opt,name=role,proto3,enum=awe.ChatRole" json:"role,omitempty"`
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChatMessage) Reset() {
+	*x = ChatMessage{}
+	mi := &file_awe_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChatMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChatMessage) ProtoMessage() {}
+
+func (x *ChatMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_awe_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChatMessage.ProtoReflect.Descriptor instead.
+func (*ChatMessage) Descriptor() ([]byte, []int) {
+	return file_awe_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *ChatMessage) GetRole() ChatRole {
+	if x != nil {
+		return x.Role
+	}
+	return ChatRole_UNSPECIFIED
+}
+
+func (x *ChatMessage) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
 type ChatRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
 	User          string                 `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
-	Args          map[string]string      `protobuf:"bytes,3,rep,name=args,proto3" json:"args,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	History       []*ChatMessage         `protobuf:"bytes,3,rep,name=history,proto3" json:"history,omitempty"`
+	Args          map[string]string      `protobuf:"bytes,101,rep,name=args,proto3" json:"args,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ChatRequest) Reset() {
 	*x = ChatRequest{}
-	mi := &file_awe_proto_msgTypes[0]
+	mi := &file_awe_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -44,7 +146,7 @@ func (x *ChatRequest) String() string {
 func (*ChatRequest) ProtoMessage() {}
 
 func (x *ChatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_awe_proto_msgTypes[0]
+	mi := &file_awe_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +159,7 @@ func (x *ChatRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatRequest.ProtoReflect.Descriptor instead.
 func (*ChatRequest) Descriptor() ([]byte, []int) {
-	return file_awe_proto_rawDescGZIP(), []int{0}
+	return file_awe_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ChatRequest) GetQuery() string {
@@ -72,6 +174,13 @@ func (x *ChatRequest) GetUser() string {
 		return x.User
 	}
 	return ""
+}
+
+func (x *ChatRequest) GetHistory() []*ChatMessage {
+	if x != nil {
+		return x.History
+	}
+	return nil
 }
 
 func (x *ChatRequest) GetArgs() map[string]string {
@@ -93,7 +202,7 @@ type ChatResponse struct {
 
 func (x *ChatResponse) Reset() {
 	*x = ChatResponse{}
-	mi := &file_awe_proto_msgTypes[1]
+	mi := &file_awe_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -105,7 +214,7 @@ func (x *ChatResponse) String() string {
 func (*ChatResponse) ProtoMessage() {}
 
 func (x *ChatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_awe_proto_msgTypes[1]
+	mi := &file_awe_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -118,7 +227,7 @@ func (x *ChatResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatResponse.ProtoReflect.Descriptor instead.
 func (*ChatResponse) Descriptor() ([]byte, []int) {
-	return file_awe_proto_rawDescGZIP(), []int{1}
+	return file_awe_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ChatResponse) GetMsgId() int32 {
@@ -153,11 +262,15 @@ var File_awe_proto protoreflect.FileDescriptor
 
 const file_awe_proto_rawDesc = "" +
 	"\n" +
-	"\tawe.proto\x12\x03awe\"\xa0\x01\n" +
+	"\tawe.proto\x12\x03awe\"J\n" +
+	"\vChatMessage\x12!\n" +
+	"\x04role\x18\x01 \x01(\x0e2\r.awe.ChatRoleR\x04role\x12\x18\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\"\xcc\x01\n" +
 	"\vChatRequest\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x12\x12\n" +
-	"\x04user\x18\x02 \x01(\tR\x04user\x12.\n" +
-	"\x04args\x18\x03 \x03(\v2\x1a.awe.ChatRequest.ArgsEntryR\x04args\x1a7\n" +
+	"\x04user\x18\x02 \x01(\tR\x04user\x12*\n" +
+	"\ahistory\x18\x03 \x03(\v2\x10.awe.ChatMessageR\ahistory\x12.\n" +
+	"\x04args\x18e \x03(\v2\x1a.awe.ChatRequest.ArgsEntryR\x04args\x1a7\n" +
 	"\tArgsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"r\n" +
@@ -165,7 +278,11 @@ const file_awe_proto_rawDesc = "" +
 	"\x06msg_id\x18\x01 \x01(\x05R\x05msgId\x12\x19\n" +
 	"\btrace_id\x18\x02 \x01(\tR\atraceId\x12\x16\n" +
 	"\x06status\x18\x03 \x01(\tR\x06status\x12\x18\n" +
-	"\acontent\x18\x04 \x01(\tR\acontent2=\n" +
+	"\acontent\x18\x04 \x01(\tR\acontent*4\n" +
+	"\bChatRole\x12\x0f\n" +
+	"\vUNSPECIFIED\x10\x00\x12\b\n" +
+	"\x04USER\x10\x01\x12\r\n" +
+	"\tASSISTANT\x10\x022=\n" +
 	"\n" +
 	"AWEService\x12/\n" +
 	"\x04Chat\x12\x10.awe.ChatRequest\x1a\x11.awe.ChatResponse\"\x000\x01B(Z&github.com/alan-mat/awe/internal/protob\x06proto3"
@@ -182,21 +299,26 @@ func file_awe_proto_rawDescGZIP() []byte {
 	return file_awe_proto_rawDescData
 }
 
-var file_awe_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_awe_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_awe_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_awe_proto_goTypes = []any{
-	(*ChatRequest)(nil),  // 0: awe.ChatRequest
-	(*ChatResponse)(nil), // 1: awe.ChatResponse
-	nil,                  // 2: awe.ChatRequest.ArgsEntry
+	(ChatRole)(0),        // 0: awe.ChatRole
+	(*ChatMessage)(nil),  // 1: awe.ChatMessage
+	(*ChatRequest)(nil),  // 2: awe.ChatRequest
+	(*ChatResponse)(nil), // 3: awe.ChatResponse
+	nil,                  // 4: awe.ChatRequest.ArgsEntry
 }
 var file_awe_proto_depIdxs = []int32{
-	2, // 0: awe.ChatRequest.args:type_name -> awe.ChatRequest.ArgsEntry
-	0, // 1: awe.AWEService.Chat:input_type -> awe.ChatRequest
-	1, // 2: awe.AWEService.Chat:output_type -> awe.ChatResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // 0: awe.ChatMessage.role:type_name -> awe.ChatRole
+	1, // 1: awe.ChatRequest.history:type_name -> awe.ChatMessage
+	4, // 2: awe.ChatRequest.args:type_name -> awe.ChatRequest.ArgsEntry
+	2, // 3: awe.AWEService.Chat:input_type -> awe.ChatRequest
+	3, // 4: awe.AWEService.Chat:output_type -> awe.ChatResponse
+	4, // [4:5] is the sub-list for method output_type
+	3, // [3:4] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_awe_proto_init() }
@@ -209,13 +331,14 @@ func file_awe_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_awe_proto_rawDesc), len(file_awe_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   3,
+			NumEnums:      1,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_awe_proto_goTypes,
 		DependencyIndexes: file_awe_proto_depIdxs,
+		EnumInfos:         file_awe_proto_enumTypes,
 		MessageInfos:      file_awe_proto_msgTypes,
 	}.Build()
 	File_awe_proto = out.File

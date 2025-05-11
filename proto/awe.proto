@@ -3,11 +3,23 @@ package awe;
 
 option go_package = "github.com/alan-mat/awe/internal/proto";
 
+enum ChatRole {
+  UNSPECIFIED = 0;
+  USER = 1;
+  ASSISTANT = 2;
+}
+
+message ChatMessage {
+  ChatRole role = 1;
+  string content = 2;
+}
+
 message ChatRequest {
   string query = 1;
   string user = 2;
+  repeated ChatMessage history = 3;
 
-  map<string, string> args = 3;
+  map<string, string> args = 101;
 }
 
 message ChatResponse {

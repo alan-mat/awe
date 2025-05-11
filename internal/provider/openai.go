@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/alan-mat/awe/internal/message"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -19,15 +20,16 @@ func NewOpenAIProvider() *OpenAIProvider {
 }
 
 func (p *OpenAIProvider) CreateCompletionStream(ctx context.Context, req CompletionRequest) (CompletionStream, error) {
+	messages := p.parseRequestHistory(req.History)
+	messages = append(messages, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleUser,
+		Content: req.Query,
+	})
+
 	openaiReq := openai.ChatCompletionRequest{
-		Model: openai.GPT4Dot1Mini,
-		Messages: []openai.ChatCompletionMessage{
-			{
-				Role:    openai.ChatMessageRoleUser,
-				Content: req.Query,
-			},
-		},
-		Stream: true,
+		Model:    openai.GPT4Dot1Mini,
+		Messages: messages,
+		Stream:   true,
 	}
 
 	s, err := p.client.CreateChatCompletionStream(ctx, openaiReq)
@@ -39,6 +41,18 @@ func (p *OpenAIProvider) CreateCompletionStream(ctx context.Context, req Complet
 		stream: s,
 	}
 	return completionStream, nil
+}
+
+func (p *OpenAIProvider) parseRequestHistory(h []*message.Chat) []openai.ChatCompletionMessage {
+	msgs := make([]openai.ChatCompletionMessage, len(h))
+	for i, m := range h {
+		ccm := openai.ChatCompletionMessage{
+			Role:    m.Role.String(),
+			Content: m.Content,
+		}
+		msgs[i] = ccm
+	}
+	return msgs
 }
 
 type OpenAICompletionStream struct {

@@ -6,6 +6,7 @@ import (
 	"iter"
 	"os"
 
+	"github.com/alan-mat/awe/internal/message"
 	"google.golang.org/genai"
 )
 
@@ -26,10 +27,13 @@ func NewGeminiProvider() *GeminiProvider {
 }
 
 func (p *GeminiProvider) CreateCompletionStream(ctx context.Context, req CompletionRequest) (CompletionStream, error) {
+	contents := p.parseRequestHistory(req.History)
+	contents = append(contents, genai.NewContentFromText(req.Query, genai.RoleUser))
+
 	i := p.client.Models.GenerateContentStream(
 		ctx,
 		"gemini-2.0-flash",
-		genai.Text(req.Query),
+		contents,
 		nil,
 	)
 
@@ -38,6 +42,19 @@ func (p *GeminiProvider) CreateCompletionStream(ctx context.Context, req Complet
 		next: next,
 		stop: stop,
 	}, nil
+}
+
+func (p *GeminiProvider) parseRequestHistory(h []*message.Chat) []*genai.Content {
+	contents := make([]*genai.Content, len(h))
+	roleTypes := map[message.ChatRole]genai.Role{
+		message.RoleUser:      genai.RoleUser,
+		message.RoleAssistant: genai.RoleModel,
+	}
+	for i, m := range h {
+		c := genai.NewContentFromText(m.Content, roleTypes[m.Role])
+		contents[i] = c
+	}
+	return contents
 }
 
 type GeminiCompletionStream struct {

@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/alan-mat/awe/internal/message"
 	pb "github.com/alan-mat/awe/internal/proto"
 	"github.com/alan-mat/awe/internal/provider"
 )
@@ -25,7 +26,8 @@ type server struct {
 }
 
 func (s *server) Chat(req *pb.ChatRequest, stream pb.AWEService_ChatServer) error {
-	slog.Debug("received chat request", "user", req.User, "query", req.Query)
+	slog.Debug("received chat request", "user", req.User, "query", req.Query, "history", req.GetHistory(), "args", req.GetArgs())
+	history := parseChatHistory(req.GetHistory())
 
 	prov, err := provider.NewLMProvider(provider.LMProviderTypeGemini)
 	if err != nil {
@@ -34,8 +36,10 @@ func (s *server) Chat(req *pb.ChatRequest, stream pb.AWEService_ChatServer) erro
 	}
 
 	creq := provider.CompletionRequest{
-		Query: req.Query,
+		Query:   req.Query,
+		History: history,
 	}
+
 	cs, err := prov.CreateCompletionStream(context.Background(), creq)
 	if err != nil {
 		slog.Warn("error creating chat completion stream, cancelling Chat request")
@@ -78,6 +82,23 @@ func (s *server) Chat(req *pb.ChatRequest, stream pb.AWEService_ChatServer) erro
 
 	slog.Debug("stream completed")
 	return nil
+}
+
+func parseChatHistory(h []*pb.ChatMessage) []*message.Chat {
+	msgs := make([]*message.Chat, len(h))
+	typesMap := map[pb.ChatRole]message.ChatRole{
+		pb.ChatRole_UNSPECIFIED: message.RoleUser,
+		pb.ChatRole_USER:        message.RoleUser,
+		pb.ChatRole_ASSISTANT:   message.RoleAssistant,
+	}
+	for i, m := range h {
+		chatmsg := &message.Chat{
+			Role:    typesMap[m.GetRole()],
+			Content: m.GetContent(),
+		}
+		msgs[i] = chatmsg
+	}
+	return msgs
 }
 
 func main() {
