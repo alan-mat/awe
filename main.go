@@ -85,7 +85,7 @@ OuterLoop:
 					return status.Errorf(codes.Internal, "something went wrong")
 				}
 
-				midI, err := strconv.ParseInt(midS, 10, 64)
+				midI, err := strconv.ParseInt(midS, 10, 32)
 				if err != nil {
 					slog.Warn("failed to parse message id", "stream", traceID, "msgID", lastID)
 					return status.Errorf(codes.Internal, "something went wrong")

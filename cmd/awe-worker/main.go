@@ -7,6 +7,8 @@ import (
 	"github.com/hibiken/asynq"
 
 	"github.com/redis/go-redis/v9"
+
+	_ "github.com/alan-mat/awe/internal/modules/generation"
 )
 
 func main() {
