@@ -11,7 +11,7 @@ import (
 	"github.com/alan-mat/awe/internal/message"
 	pb "github.com/alan-mat/awe/internal/proto"
 	"github.com/alan-mat/awe/internal/provider"
-	"github.com/redis/go-redis/v9"
+	"github.com/alan-mat/awe/internal/transport"
 
 	"github.com/hibiken/asynq"
 )
@@ -42,12 +42,12 @@ func NewChatTask(req *pb.ChatRequest) (*asynq.Task, error) {
 }
 
 type ChatTaskHandler struct {
-	rdb *redis.Client
+	transport transport.Transport
 }
 
-func NewChatTaskHandler(rdb *redis.Client) *ChatTaskHandler {
+func NewChatTaskHandler(transport transport.Transport) *ChatTaskHandler {
 	return &ChatTaskHandler{
-		rdb: rdb,
+		transport: transport,
 	}
 }
 
@@ -62,24 +62,20 @@ func (h *ChatTaskHandler) ProcessTask(ctx context.Context, t *asynq.Task) error 
 	slog.Info("task id", "id", id)
 
 	msgId := 0
-	sendToStream := func(msg string, status string) error {
-		_, err := h.rdb.XAdd(ctx, &redis.XAddArgs{
-			Stream: id,
-			ID:     "*",
-			Values: map[string]any{
-				"id":      msgId,
-				"message": msg,
-				"status":  status,
-			},
-		}).Result()
-		msgId += 1
+	s, err := h.transport.GetMessageStream(id)
+	if err != nil {
+		slog.Warn("failed to create message stream", "id", id)
 		return err
 	}
 
 	prov, err := provider.NewLMProvider(provider.LMProviderTypeGemini)
 	if err != nil {
 		slog.Warn("error creating new lmprovider, cancelling task")
-		sendToStream("Something went wrong", "ERR")
+		s.Send(ctx, transport.MessageStreamPayload{
+			ID:      msgId,
+			Content: "something went wrong",
+			Status:  "ERR",
+		})
 		return err
 	}
 
@@ -92,7 +88,11 @@ func (h *ChatTaskHandler) ProcessTask(ctx context.Context, t *asynq.Task) error 
 	cs, err := prov.CreateCompletionStream(ctx, creq)
 	if err != nil {
 		slog.Warn("error creating chat completion stream, cancelling task")
-		sendToStream("Something went wrong", "ERR")
+		s.Send(ctx, transport.MessageStreamPayload{
+			ID:      msgId,
+			Content: "something went wrong",
+			Status:  "ERR",
+		})
 		return err
 	}
 	defer cs.Close()
@@ -106,17 +106,31 @@ func (h *ChatTaskHandler) ProcessTask(ctx context.Context, t *asynq.Task) error 
 
 		if err != nil {
 			slog.Debug("provider stream error", "id", id, "error", err)
-			sendToStream("Something went wrong.", "ERR")
+			s.Send(ctx, transport.MessageStreamPayload{
+				ID:      msgId,
+				Content: "something went wrong",
+				Status:  "ERR",
+			})
 			return err
 		}
 
-		err = sendToStream(chunk, "OK")
+		err = s.Send(ctx, transport.MessageStreamPayload{
+			ID:      msgId,
+			Content: chunk,
+			Status:  "OK",
+		})
 		if err != nil {
 			slog.Debug("failed sending chunk to stream", "id", id, "chunk", chunk)
 		}
+
+		msgId += 1
 	}
 
-	err = sendToStream("Task finished", "DONE")
+	err = s.Send(ctx, transport.MessageStreamPayload{
+		ID:      msgId,
+		Content: "task finished",
+		Status:  "DONE",
+	})
 	if err != nil {
 		slog.Warn("failed to write DONE message to stream", "id", id)
 	}

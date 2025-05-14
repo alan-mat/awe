@@ -3,7 +3,7 @@ package generation
 import (
 	"log/slog"
 
-	"github.com/alan-mat/awe/internal/engine"
+	"github.com/alan-mat/awe/internal/executor"
 	"github.com/alan-mat/awe/internal/provider"
 	"github.com/alan-mat/awe/internal/registry"
 )
@@ -33,7 +33,7 @@ func NewSimpleExecutor() *SimpleExecutor {
 	return e
 }
 
-func (e *SimpleExecutor) Execute(operator string, args ...any) engine.ExecutorResult {
+func (e *SimpleExecutor) Execute(operator string, args ...any) executor.ExecutorResult {
 	if operator == "" {
 		operator = "generate"
 	}
@@ -41,7 +41,7 @@ func (e *SimpleExecutor) Execute(operator string, args ...any) engine.ExecutorRe
 
 	opFunc, exists := e.operators[operator]
 	if !exists {
-		return e.buildResult(operator, engine.ErrOperatorNotFound{
+		return e.buildResult(operator, executor.ErrOperatorNotFound{
 			ExecutorName: simpleExecutorDescriptor, OperatorName: operator}, nil)
 	}
 
@@ -55,8 +55,8 @@ func (e *SimpleExecutor) generate(...any) error {
 	return nil
 }
 
-func (e *SimpleExecutor) buildResult(operator string, err error, values map[string]any) engine.ExecutorResult {
-	return engine.ExecutorResult{
+func (e *SimpleExecutor) buildResult(operator string, err error, values map[string]any) executor.ExecutorResult {
+	return executor.ExecutorResult{
 		Name:     simpleExecutorDescriptor,
 		Operator: operator,
 		Err:      err,

@@ -5,15 +5,15 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/alan-mat/awe/internal/engine"
+	"github.com/alan-mat/awe/internal/executor"
 )
 
 var (
 	executorLock sync.RWMutex
-	executors    = make(map[string]engine.Executor)
+	executors    = make(map[string]executor.Executor)
 )
 
-func RegisterExecutor(name string, exec engine.Executor) error {
+func RegisterExecutor(name string, exec executor.Executor) error {
 	executorLock.Lock()
 	defer executorLock.Unlock()
 
@@ -25,7 +25,7 @@ func RegisterExecutor(name string, exec engine.Executor) error {
 	return nil
 }
 
-func GetExecutor(name string) (engine.Executor, error) {
+func GetExecutor(name string) (executor.Executor, error) {
 	executorLock.RLock()
 	defer executorLock.RUnlock()
 

@@ -1,4 +1,4 @@
-package engine
+package executor
 
 import "fmt"
 
@@ -25,6 +25,37 @@ func (e ErrInvalidArguments) Error() string {
 
 type Executor interface {
 	Execute(operator string, args ...any) ExecutorResult
+}
+
+type ExecutorParams struct {
+	operator string
+	//transport
+	args []any
+}
+
+type ExecutorParamOption func(*ExecutorParams)
+
+func NewExecutorParams(options ...ExecutorParamOption) *ExecutorParams {
+	ep := &ExecutorParams{
+		operator: "",
+		args:     nil,
+	}
+	for _, opt := range options {
+		opt(ep)
+	}
+	return ep
+}
+
+func WithOperator(op string) ExecutorParamOption {
+	return func(ep *ExecutorParams) {
+		ep.operator = op
+	}
+}
+
+func WithArgs(args ...any) ExecutorParamOption {
+	return func(ep *ExecutorParams) {
+		ep.args = args
+	}
 }
 
 type ExecutorResult struct {

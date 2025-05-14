@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/hibiken/asynq"
@@ -18,18 +17,18 @@ import (
 
 	pb "github.com/alan-mat/awe/internal/proto"
 	"github.com/alan-mat/awe/internal/tasks"
+	"github.com/alan-mat/awe/internal/transport"
 )
 
 // Server implements the AWEService
 type server struct {
 	pb.UnimplementedAWEServiceServer
-	rdb         *redis.Client
+	transport   transport.Transport
 	asynqClient *asynq.Client
 }
 
 func (s *server) Chat(req *pb.ChatRequest, stream pb.AWEService_ChatServer) error {
 	slog.Debug("received chat request", "user", req.User, "query", req.Query, "history", req.GetHistory(), "args", req.GetArgs())
-	//history := message.ParseChatHistory(req.History)
 
 	t, err := tasks.NewChatTask(req)
 	if err != nil {
@@ -46,68 +45,45 @@ func (s *server) Chat(req *pb.ChatRequest, stream pb.AWEService_ChatServer) erro
 	traceID := info.ID
 
 	ctx := context.Background()
-	lastID := "0"
 
-OuterLoop:
+	tstream, err := s.transport.GetMessageStream(traceID)
+	if err != nil {
+		slog.Error("failed to retrieve stream", "id", traceID)
+		return status.Errorf(codes.Internal, "something went wrong")
+	}
+
+	readFails := 0
+Loop:
 	for {
-		rstreams, err := s.rdb.XRead(ctx, &redis.XReadArgs{
-			Streams: []string{traceID, lastID},
-			Count:   1,
-			Block:   0,
-		}).Result()
+		msg, err := tstream.Recv(ctx)
 
 		if err != nil {
 			slog.Error("failed to read from stream", "stream", traceID)
+			readFails += 1
+			if readFails >= 10 {
+				slog.Error("exceeded stream read attempts, failed", "id", traceID)
+				return status.Errorf(codes.Internal, "something went wrong")
+			}
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
+		readFails = 0
 
-		for _, str := range rstreams {
-			for _, msg := range str.Messages {
-				lastID = msg.ID
-				slog.Debug("received message from stream", "stream", traceID, "msgID", lastID, "values", msg.Values)
+		switch msg.Status {
+		case "ERR":
+			return status.Errorf(codes.Internal, "something went wrong")
+		case "DONE":
+			break Loop
+		default:
+		}
 
-				stat, ok := msg.Values["status"].(string)
-				if !ok {
-					slog.Warn("failed to retrieve message status", "stream", traceID, "msgID", lastID)
-					return status.Errorf(codes.Internal, "something went wrong")
-				}
-
-				msgContent, ok := msg.Values["message"].(string)
-				if !ok {
-					slog.Warn("failed to retrieve message contents", "stream", traceID, "msgID", lastID)
-					return status.Errorf(codes.Internal, "something went wrong")
-				}
-
-				midS, ok := msg.Values["id"].(string)
-				if !ok {
-					slog.Warn("failed to retrieve message id", "stream", traceID, "msgID", lastID)
-					return status.Errorf(codes.Internal, "something went wrong")
-				}
-
-				midI, err := strconv.ParseInt(midS, 10, 32)
-				if err != nil {
-					slog.Warn("failed to parse message id", "stream", traceID, "msgID", lastID)
-					return status.Errorf(codes.Internal, "something went wrong")
-				}
-
-				switch stat {
-				case "ERR":
-					return status.Errorf(codes.Internal, "something went wrong")
-				case "DONE":
-					break OuterLoop
-				default:
-				}
-
-				resp := &pb.ChatResponse{
-					MsgId:   int32(midI),
-					TraceId: traceID,
-					Content: msgContent,
-				}
-				if err := stream.Send(resp); err != nil {
-					return err
-				}
-			}
+		resp := &pb.ChatResponse{
+			MsgId:   int32(msg.ID),
+			TraceId: traceID,
+			Content: msg.Content,
+		}
+		if err := stream.Send(resp); err != nil {
+			return err
 		}
 	}
 
@@ -137,6 +113,8 @@ func main() {
 	})
 	defer rdb.Close()
 
+	t := transport.NewRedisTransport(rdb)
+
 	client := asynq.NewClientFromRedisClient(rdb)
 	defer client.Close()
 	client.Ping()
@@ -144,7 +122,7 @@ func main() {
 	s := grpc.NewServer()
 	pb.RegisterAWEServiceServer(s, &server{
 		asynqClient: client,
-		rdb:         rdb,
+		transport:   t,
 	})
 
 	slog.Info("Server starting on :50051")

@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/alan-mat/awe/internal/tasks"
+	"github.com/alan-mat/awe/internal/transport"
 	"github.com/hibiken/asynq"
 
 	"github.com/redis/go-redis/v9"
@@ -24,8 +25,10 @@ func main() {
 		asynq.Config{Concurrency: 10},
 	)
 
+	transport := transport.NewRedisTransport(rdb)
+
 	mux := asynq.NewServeMux()
-	mux.Handle("awe:chat", tasks.NewChatTaskHandler(rdb))
+	mux.Handle("awe:chat", tasks.NewChatTaskHandler(transport))
 
 	if err := srv.Run(mux); err != nil {
 		log.Fatal(err)
