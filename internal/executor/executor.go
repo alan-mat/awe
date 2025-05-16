@@ -1,6 +1,11 @@
 package executor
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+
+	"github.com/alan-mat/awe/internal/transport"
+)
 
 type ErrOperatorNotFound struct {
 	ExecutorName string
@@ -24,21 +29,26 @@ func (e ErrInvalidArguments) Error() string {
 }
 
 type Executor interface {
-	Execute(operator string, args ...any) ExecutorResult
+	Execute(ctx context.Context, params ExecutorParams) ExecutorResult
 }
 
 type ExecutorParams struct {
-	operator string
-	//transport
-	args []any
+	taskID string
+	query  string
+
+	Operator  string
+	Transport transport.Transport
+	Args      map[string]any
 }
 
 type ExecutorParamOption func(*ExecutorParams)
 
-func NewExecutorParams(options ...ExecutorParamOption) *ExecutorParams {
+func NewExecutorParams(id string, query string, options ...ExecutorParamOption) *ExecutorParams {
 	ep := &ExecutorParams{
-		operator: "",
-		args:     nil,
+		taskID:   id,
+		query:    query,
+		Operator: "",
+		Args:     nil,
 	}
 	for _, opt := range options {
 		opt(ep)
@@ -46,15 +56,29 @@ func NewExecutorParams(options ...ExecutorParamOption) *ExecutorParams {
 	return ep
 }
 
+func (p ExecutorParams) GetTaskID() string {
+	return p.taskID
+}
+
+func (p ExecutorParams) GetQuery() string {
+	return p.query
+}
+
 func WithOperator(op string) ExecutorParamOption {
 	return func(ep *ExecutorParams) {
-		ep.operator = op
+		ep.Operator = op
 	}
 }
 
-func WithArgs(args ...any) ExecutorParamOption {
+func WithTransport(t transport.Transport) ExecutorParamOption {
 	return func(ep *ExecutorParams) {
-		ep.args = args
+		ep.Transport = t
+	}
+}
+
+func WithArgs(args map[string]any) ExecutorParamOption {
+	return func(ep *ExecutorParams) {
+		ep.Args = args
 	}
 }
 
