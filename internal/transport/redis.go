@@ -85,6 +85,32 @@ func (s *RedisStream) Recv(ctx context.Context) (*MessageStreamPayload, error) {
 	return &payload, nil
 }
 
+func (s *RedisStream) Text(ctx context.Context) (string, error) {
+	rmsgs, err := s.rdb.XRange(ctx, s.id, "-", "+").Result()
+	if err != nil {
+		return "", err
+	}
+
+	var text string
+	for _, msg := range rmsgs {
+		payloadJSON, ok := msg.Values["payload"].(string)
+		if !ok {
+			return "", fmt.Errorf("failed to read payload from stream message")
+		}
+
+		var payload MessageStreamPayload
+		if err := json.Unmarshal([]byte(payloadJSON), &payload); err != nil {
+			return "", fmt.Errorf("failed to deserialize stream message payload")
+		}
+
+		if payload.Status == "OK" {
+			text += payload.Content
+		}
+	}
+
+	return text, nil
+}
+
 func (s *RedisStream) GetID() string {
 	return s.id
 }

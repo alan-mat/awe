@@ -9,6 +9,7 @@ type Transport interface {
 type MessageStream interface {
 	Send(ctx context.Context, payload MessageStreamPayload) error
 	Recv(ctx context.Context) (*MessageStreamPayload, error)
+	Text(ctx context.Context) (string, error)
 	GetID() string
 }
 

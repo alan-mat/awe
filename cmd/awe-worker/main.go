@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
+	"github.com/alan-mat/awe/internal/config"
 	"github.com/alan-mat/awe/internal/tasks"
 	"github.com/alan-mat/awe/internal/transport"
 	"github.com/hibiken/asynq"
@@ -10,6 +12,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	_ "github.com/alan-mat/awe/internal/modules/generation"
+	_ "github.com/alan-mat/awe/internal/modules/system"
 )
 
 func main() {
@@ -26,6 +29,9 @@ func main() {
 	)
 
 	transport := transport.NewRedisTransport(rdb)
+
+	wc := config.ParseWorkflowConfig("workflows.yaml")
+	fmt.Printf("%v\n", wc)
 
 	mux := asynq.NewServeMux()
 	mux.Handle("awe:chat", tasks.NewChatTaskHandler(transport))

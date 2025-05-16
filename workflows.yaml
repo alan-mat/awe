@@ -1,0 +1,12 @@
+---
+workflows:
+  basic:
+    name: chat_basic
+    nodes:
+      - module: generation.Simple
+        operator: generate
+        
+      - module: internal.Logger
+        operator: acc_stream
+        args: 
+          number: 129

@@ -70,5 +70,8 @@ func (h *ChatTaskHandler) ProcessTask(ctx context.Context, t *asynq.Task) error 
 	)
 	exec.Execute(ctx, params)
 
+	exec, _ = registry.GetExecutor("system.Logger")
+	exec.Execute(ctx, params)
+
 	return nil
 }
