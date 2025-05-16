@@ -17,13 +17,6 @@ type WorkflowNode struct {
 	Args     map[string]any   `yaml:"args"`
 }
 
-type WorkflowNodeConditional struct {
-	Module   string `yaml:"module"`
-	Operator string `yaml:"op"`
-	IfTrue   string
-	IfFalse  string
-}
-
 type Workflow struct {
 	Identifier  string `yaml:"name"`
 	Description string `yaml:"description"`

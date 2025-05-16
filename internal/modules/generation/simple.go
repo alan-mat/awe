@@ -133,15 +133,6 @@ func (e *SimpleExecutor) generate(ctx context.Context, p executor.ExecutorParams
 		msgId += 1
 	}
 
-	err = ms.Send(ctx, transport.MessageStreamPayload{
-		ID:      msgId,
-		Content: "task finished",
-		Status:  "DONE",
-	})
-	if err != nil {
-		slog.Warn("failed to write DONE message to stream", "id", p.GetTaskID())
-	}
-
 	return nil
 }
 

@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 
 	"github.com/alan-mat/awe/internal/executor"
@@ -59,19 +60,33 @@ func (h *ChatTaskHandler) ProcessTask(ctx context.Context, t *asynq.Task) error 
 	slog.Info("received chat task", "user", p.User, "query", p.Query, "history", p.History)
 	slog.Info("task id", "id", id)
 
-	exec, _ := registry.GetExecutor("generation.Simple")
+	workflow, _ := registry.GetWorkflow("chat_basic")
+
+	args := make(map[string]any)
+	for k, v := range p.Args {
+		args[k] = v
+	}
+
 	params := *executor.NewExecutorParams(
 		id,
 		p.Query,
 		executor.WithTransport(h.transport),
-		executor.WithArgs(map[string]any{
-			"history": p.History,
-		}),
+		executor.WithArgs(args),
 	)
-	exec.Execute(ctx, params)
 
-	exec, _ = registry.GetExecutor("system.Logger")
-	exec.Execute(ctx, params)
+	res := workflow.Execute(ctx, params)
+	if res.Err != nil {
+		return fmt.Errorf("workflow execution failed: %w", asynq.SkipRetry)
+	}
+
+	ms, _ := h.transport.GetMessageStream(id)
+	err := ms.Send(ctx, transport.MessageStreamPayload{
+		Content: "task finished",
+		Status:  "DONE",
+	})
+	if err != nil {
+		slog.Warn("failed to write DONE message to stream", "id", id)
+	}
 
 	return nil
 }
