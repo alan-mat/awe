@@ -118,13 +118,13 @@ func (c *Client) do(method string, path string, paylaod map[string]any) (*gohttp
 	}
 
 	if c.apiKey != "" {
-		req.Header.Set("Authorization", "Bearer"+c.apiKey)
+		req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	var resp *gohttp.Response
 	for i := range c.maxRetries {
-		resp, err := c.httpClient.Do(req)
+		resp, err = c.httpClient.Do(req)
 		if err != nil {
 			if i == c.maxRetries-1 {
 				return nil, err
