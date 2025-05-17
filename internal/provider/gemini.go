@@ -11,7 +11,8 @@ import (
 )
 
 type GeminiProvider struct {
-	client *genai.Client
+	client     *genai.Client
+	vectorDims *int32
 }
 
 func NewGeminiProvider() *GeminiProvider {
@@ -21,9 +22,11 @@ func NewGeminiProvider() *GeminiProvider {
 		APIKey:  os.Getenv("GEMINI_API_KEY"),
 		Backend: genai.BackendGeminiAPI,
 	})
-	return &GeminiProvider{
+	p := &GeminiProvider{
 		client: c,
 	}
+	*(p.vectorDims) = 1536
+	return p
 }
 
 func (p *GeminiProvider) CreateCompletionStream(ctx context.Context, req CompletionRequest) (CompletionStream, error) {
@@ -42,6 +45,59 @@ func (p *GeminiProvider) CreateCompletionStream(ctx context.Context, req Complet
 		next: next,
 		stop: stop,
 	}, nil
+}
+
+func (p *GeminiProvider) EmbedQuery(ctx context.Context, q string) ([]float32, error) {
+	contents := genai.Text(q)
+
+	config := &genai.EmbedContentConfig{
+		TaskType:             "RETRIEVAL_QUERY",
+		OutputDimensionality: p.vectorDims,
+	}
+
+	res, err := p.client.Models.EmbedContent(ctx, "gemini-embedding-exp-03-07", contents, config)
+	if err != nil {
+		return nil, err
+	}
+
+	vals := res.Embeddings[0].Values
+	return vals, nil
+}
+
+func (p *GeminiProvider) EmbedDocuments(ctx context.Context, docs []*EmbedDocumentRequest) ([]*DocumentEmbedding, error) {
+	embeddings := make([]*DocumentEmbedding, 0, len(docs))
+
+	for _, doc := range docs {
+		contents := make([]*genai.Content, 0, len(doc.Chunks))
+		for _, chunk := range doc.Chunks {
+			content := genai.NewContentFromText(chunk, genai.RoleUser)
+			contents = append(contents, content)
+		}
+
+		config := &genai.EmbedContentConfig{
+			TaskType:             "RETRIEVAL_DOCUMENT",
+			Title:                doc.Title,
+			OutputDimensionality: p.vectorDims,
+		}
+
+		res, err := p.client.Models.EmbedContent(ctx, "gemini-embedding-exp-03-07", contents, config)
+		if err != nil {
+			return nil, err
+		}
+
+		values := make([][]float32, 0, len(res.Embeddings))
+		for _, rEmbedding := range res.Embeddings {
+			values = append(values, rEmbedding.Values)
+		}
+
+		docEmbed := &DocumentEmbedding{
+			Title:  doc.Title,
+			Values: values,
+		}
+		embeddings = append(embeddings, docEmbed)
+	}
+
+	return embeddings, nil
 }
 
 func (p *GeminiProvider) parseRequestHistory(h []*message.Chat) []*genai.Content {

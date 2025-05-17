@@ -5,8 +5,8 @@ workflows:
     nodes:
       - module: generation.Simple
         operator: generate
-        
-      - module: internal.Logger
+
+      - module: system.Logger
         operator: acc_stream
         args: 
           number: 129
