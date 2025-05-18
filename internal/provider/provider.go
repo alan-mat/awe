@@ -6,9 +6,7 @@ import (
 )
 
 var (
-	ErrInvalidLMProviderType            = errors.New("no lmprovider found for given type")
-	ErrInvalidEmbedProviderType         = errors.New("no embeddings provider found for given type")
-	ErrInvalidDocumentParseProviderType = errors.New("no document parse provider found for given type")
+	ErrInvalidProviderType = errors.New("no provider found for given type")
 )
 
 const (
@@ -24,9 +22,14 @@ const (
 	DocumentParseProviderTypeMistral = iota
 )
 
+const (
+	DocumentSegmentProviderTypeJinaAI = iota
+)
+
 type LMProviderType int
 type EmbedProviderType int
 type DocumentParseProviderType int
+type DocumentSegmentProviderType int
 
 type LMProvider interface {
 	CreateCompletionStream(context.Context, CompletionRequest) (CompletionStream, error)
@@ -39,7 +42,7 @@ func NewLMProvider(t LMProviderType) (LMProvider, error) {
 	case LMProviderTypeGemini:
 		return NewGeminiProvider(), nil
 	default:
-		return nil, ErrInvalidLMProviderType
+		return nil, ErrInvalidProviderType
 	}
 }
 
@@ -53,7 +56,7 @@ func NewEmbedProvider(t EmbedProviderType) (EmbedProvider, error) {
 	case EmbedProviderTypeGemini:
 		return NewGeminiProvider(), nil
 	default:
-		return nil, ErrInvalidEmbedProviderType
+		return nil, ErrInvalidProviderType
 	}
 }
 
@@ -66,6 +69,19 @@ func NewDocumentParseProvider(t DocumentParseProviderType) (DocumentParseProvide
 	case DocumentParseProviderTypeMistral:
 		return NewMistralProvider(), nil
 	default:
-		return nil, ErrInvalidDocumentParseProviderType
+		return nil, ErrInvalidProviderType
+	}
+}
+
+type DocumentSegmentProvider interface {
+	ChunkDocument(ctx context.Context, doc *DocumentContent) ([]string, error)
+}
+
+func NewDocumentSegmentProvider(t DocumentSegmentProviderType) (DocumentSegmentProvider, error) {
+	switch t {
+	case DocumentSegmentProviderTypeJinaAI:
+		return NewJinaAIProvider(), nil
+	default:
+		return nil, ErrInvalidProviderType
 	}
 }
