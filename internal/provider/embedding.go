@@ -7,5 +7,6 @@ type EmbedDocumentRequest struct {
 
 type DocumentEmbedding struct {
 	Title  string
+	Chunks []string
 	Values [][]float32
 }

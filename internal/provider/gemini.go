@@ -23,7 +23,8 @@ func NewGeminiProvider() *GeminiProvider {
 		Backend: genai.BackendGeminiAPI,
 	})
 	p := &GeminiProvider{
-		client: c,
+		client:     c,
+		vectorDims: new(int32),
 	}
 	*(p.vectorDims) = 1536
 	return p
@@ -93,6 +94,7 @@ func (p *GeminiProvider) EmbedDocuments(ctx context.Context, docs []*EmbedDocume
 		docEmbed := &DocumentEmbedding{
 			Title:  doc.Title,
 			Values: values,
+			Chunks: doc.Chunks,
 		}
 		embeddings = append(embeddings, docEmbed)
 	}

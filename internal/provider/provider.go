@@ -16,6 +16,7 @@ const (
 
 const (
 	EmbedProviderTypeGemini = iota
+	EmbedProviderTypeJinaAI
 )
 
 const (
@@ -55,6 +56,8 @@ func NewEmbedProvider(t EmbedProviderType) (EmbedProvider, error) {
 	switch t {
 	case EmbedProviderTypeGemini:
 		return NewGeminiProvider(), nil
+	case EmbedProviderTypeJinaAI:
+		return NewJinaAIProvider(), nil
 	default:
 		return nil, ErrInvalidProviderType
 	}
