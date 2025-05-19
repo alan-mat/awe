@@ -48,9 +48,6 @@ func (e *ReaderExecutor) Execute(ctx context.Context, p *executor.ExecutorParams
 	}
 
 	vals, err := opFunc(ctx, p)
-	if err == nil {
-		slog.Info("reader results", "values", vals)
-	}
 
 	return e.buildResult(p.Operator, err, vals)
 }

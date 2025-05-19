@@ -8,8 +8,6 @@ workflows:
 
       - module: system.Logger
         operator: acc_stream
-        args: 
-          number: 129
 
   index_local_files:
     name: index_local
@@ -20,3 +18,11 @@ workflows:
           path: ./files
 
       - module: indexing.Simple
+
+  naive_rag:
+    name: naive_rag
+    collection: awe_index
+    nodes:
+      - module: retrieval.Semantic
+      - module: generation.Augmented
+      - module: system.Logger

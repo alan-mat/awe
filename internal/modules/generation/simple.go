@@ -2,9 +2,7 @@ package generation
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 
 	"github.com/alan-mat/awe/internal/executor"
@@ -57,7 +55,6 @@ func (e *SimpleExecutor) Execute(ctx context.Context, p *executor.ExecutorParams
 }
 
 func (e *SimpleExecutor) generate(ctx context.Context, p *executor.ExecutorParams) error {
-	msgId := 0
 	ms, err := p.Transport.GetMessageStream(p.GetTaskID())
 	if err != nil {
 		slog.Warn("failed to create message stream", "id", p.GetTaskID())
@@ -72,7 +69,6 @@ func (e *SimpleExecutor) generate(ctx context.Context, p *executor.ExecutorParam
 	if err != nil {
 		slog.Warn("error creating new lmprovider, cancelling task")
 		ms.Send(ctx, transport.MessageStreamPayload{
-			ID:      msgId,
 			Content: "something went wrong",
 			Status:  "ERR",
 		})
@@ -96,7 +92,6 @@ func (e *SimpleExecutor) generate(ctx context.Context, p *executor.ExecutorParam
 	if err != nil {
 		slog.Warn("error creating chat completion stream, cancelling task")
 		ms.Send(ctx, transport.MessageStreamPayload{
-			ID:      msgId,
 			Content: "something went wrong",
 			Status:  "ERR",
 		})
@@ -104,33 +99,9 @@ func (e *SimpleExecutor) generate(ctx context.Context, p *executor.ExecutorParam
 	}
 	defer cs.Close()
 
-	for {
-		chunk, err := cs.Recv()
-		if errors.Is(err, io.EOF) {
-			slog.Debug("provider stream finished", "id", p.GetTaskID())
-			break
-		}
-
-		if err != nil {
-			slog.Debug("provider stream error", "id", p.GetTaskID(), "error", err)
-			ms.Send(ctx, transport.MessageStreamPayload{
-				ID:      msgId,
-				Content: "something went wrong",
-				Status:  "ERR",
-			})
-			return err
-		}
-
-		err = ms.Send(ctx, transport.MessageStreamPayload{
-			ID:      msgId,
-			Content: chunk,
-			Status:  "OK",
-		})
-		if err != nil {
-			slog.Debug("failed sending chunk to stream", "id", p.GetTaskID(), "chunk", chunk)
-		}
-
-		msgId += 1
+	_, err = transport.ProcessCompletionStream(ctx, ms, cs)
+	if err != nil {
+		return fmt.Errorf("failed to process completion stream: %e", err)
 	}
 
 	return nil

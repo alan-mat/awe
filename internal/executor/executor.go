@@ -3,6 +3,7 @@ package executor
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/alan-mat/awe/internal/transport"
 	"github.com/alan-mat/awe/internal/vector"
@@ -23,6 +24,17 @@ type ErrArgMissing struct {
 
 func (e ErrArgMissing) Error() string {
 	return fmt.Sprintf("requested argument '%s' does not exist", e.ArgName)
+}
+
+type ErrInvalidArgumentType struct {
+	Name     string
+	Expected string
+	Received string
+}
+
+func (e ErrInvalidArgumentType) Error() string {
+	return fmt.Sprintf("argument '%s' must be of type '%s', but received '%s'",
+		e.Name, e.Expected, e.Received)
 }
 
 type Executor interface {
@@ -107,4 +119,46 @@ func (res *ExecutorResult) Get(valueName string) (any, bool) {
 		return nil, false
 	}
 	return val, true
+}
+
+func GetTypedArg[T any](p *ExecutorParams, argName string) (T, error) {
+	arg, err := p.GetArg(argName)
+	if err != nil {
+		return *new(T), err
+	}
+
+	typedArg, ok := arg.(T)
+	if !ok {
+		expectedType := reflect.TypeOf((*T)(nil)).Elem()
+		receivedType := reflect.TypeOf(arg)
+
+		return *new(T), ErrInvalidArgumentType{
+			Name:     argName,
+			Expected: expectedType.String(),
+			Received: receivedType.String(),
+		}
+	}
+
+	return typedArg, nil
+}
+
+func GetTypedResult[T any](res *ExecutorResult, argName string) (T, error) {
+	arg, ok := res.Get(argName)
+	if !ok {
+		return *new(T), fmt.Errorf("argument '%s' not found in results", argName)
+	}
+
+	typedArg, ok := arg.(T)
+	if !ok {
+		expectedType := reflect.TypeOf((*T)(nil)).Elem()
+		receivedType := reflect.TypeOf(arg)
+
+		return *new(T), ErrInvalidArgumentType{
+			Name:     argName,
+			Expected: expectedType.String(),
+			Received: receivedType.String(),
+		}
+	}
+
+	return typedArg, nil
 }

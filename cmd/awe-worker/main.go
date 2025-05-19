@@ -9,11 +9,14 @@ import (
 	"github.com/alan-mat/awe/internal/registry"
 	"github.com/alan-mat/awe/internal/tasks"
 	"github.com/alan-mat/awe/internal/transport"
+	"github.com/alan-mat/awe/internal/vector"
 	"github.com/hibiken/asynq"
 
 	"github.com/redis/go-redis/v9"
 
 	_ "github.com/alan-mat/awe/internal/modules/generation"
+	_ "github.com/alan-mat/awe/internal/modules/indexing"
+	_ "github.com/alan-mat/awe/internal/modules/retrieval"
 	_ "github.com/alan-mat/awe/internal/modules/system"
 )
 
@@ -32,6 +35,12 @@ func main() {
 
 	transport := transport.NewRedisTransport(rdb)
 
+	vectorStore, err := vector.NewQdrantStoreDefault()
+	if err != nil {
+		panic(err)
+	}
+	defer vectorStore.Close()
+
 	wc := config.ParseWorkflowConfig("workflows.yaml")
 	workflows, err := initWorkflows(wc)
 	if err != nil {
@@ -43,8 +52,36 @@ func main() {
 		panic(err)
 	}
 
+	/* wf, _ := registry.GetWorkflow("index_local")
+	res := wf.Execute(context.Background(), executor.NewExecutorParams(
+		uuid.NewString(),
+		"",
+		executor.WithVectorStore(vectorStore),
+	))
+	fmt.Printf("\nGot result: %v\n\n", res)
+	return */
+
+	/* exec, _ := registry.GetExecutor("retrieval.Semantic")
+	res := exec.Execute(context.Background(), executor.NewExecutorParams(
+		uuid.NewString(),
+		"Large language models are sensitive to reasoning order",
+		executor.WithVectorStore(vectorStore),
+		executor.WithArgs(map[string]any{"collection_name": "awe_index"}),
+	))
+	if res.Err != nil {
+		panic(res.Err)
+	}
+	points, err := executor.GetTypedResult[[]*vector.ScoredPoint](&res, "context_points")
+	if err != nil {
+		panic(err)
+	}
+	for _, point := range points {
+		fmt.Printf("POINT\nScore: %f\nText: %s\n", point.Score, point.Text())
+	}
+	return */
+
 	mux := asynq.NewServeMux()
-	mux.Handle("awe:chat", tasks.NewChatTaskHandler(transport))
+	mux.Handle("awe:chat", tasks.NewChatTaskHandler(transport, vectorStore))
 
 	if err := srv.Run(mux); err != nil {
 		log.Fatal(err)
@@ -65,7 +102,15 @@ func initWorkflows(conf config.WorkflowConfig) (map[string]*executor.Workflow, e
 			nodes = append(nodes, executor.NewWorkflowNode(exec, cnode.Operator, cnode.Args))
 		}
 
-		workflow := executor.NewWorkflow(cw.Identifier, cw.Description, nodes)
+		var collectionName string
+		if cw.CollectionName == "" {
+			collectionName = "default"
+		} else {
+			collectionName = cw.CollectionName
+		}
+
+		workflow := executor.NewWorkflow(cw.Identifier, cw.Description, collectionName, nodes)
+
 		workflows[cw.Identifier] = workflow
 	}
 

@@ -34,11 +34,16 @@ func (p *GeminiProvider) CreateCompletionStream(ctx context.Context, req Complet
 	contents := p.parseRequestHistory(req.History)
 	contents = append(contents, genai.NewContentFromText(req.Query, genai.RoleUser))
 
+	config := &genai.GenerateContentConfig{}
+	if req.SystemPrompt != "" {
+		config.SystemInstruction = genai.NewContentFromText(req.SystemPrompt, "")
+	}
+
 	i := p.client.Models.GenerateContentStream(
 		ctx,
 		"gemini-2.0-flash",
 		contents,
-		nil,
+		config,
 	)
 
 	next, stop := iter.Pull2(i)
@@ -124,7 +129,7 @@ type GeminiCompletionStream struct {
 	stop func()
 }
 
-func (s *GeminiCompletionStream) Recv() (string, error) {
+func (s GeminiCompletionStream) Recv() (string, error) {
 	res, err, valid := s.next()
 	if !valid {
 		//iterator is finished
@@ -138,7 +143,7 @@ func (s *GeminiCompletionStream) Recv() (string, error) {
 	return res.Text(), nil
 }
 
-func (s *GeminiCompletionStream) Close() error {
+func (s GeminiCompletionStream) Close() error {
 	s.stop()
 	return nil
 }

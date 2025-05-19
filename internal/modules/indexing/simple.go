@@ -78,7 +78,7 @@ func (e SimpleExecutor) Execute(ctx context.Context, p *executor.ExecutorParams)
 }
 
 func (e SimpleExecutor) indexFilesBase64(ctx context.Context, p *executor.ExecutorParams) (map[string]any, error) {
-	// indexFilesBase64 requires following parameter args:
+	// 'index_files_base64' requires following parameter args:
 	// file_contents - contains the base64 encoded files to index; type must be []*message.FileContent
 	// collection_name - name of the collection to use for the vector store
 	fcArg, err := p.GetArg("file_contents")

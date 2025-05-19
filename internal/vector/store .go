@@ -134,7 +134,15 @@ func WithFilter(filter *QueryMatch) QueryParamsOption {
 }
 
 type ScoredPoint struct {
-	ID      string
-	Score   float32
-	Payload map[string]string
+	ID      string            `json:"id"`
+	Score   float32           `json:"score"`
+	Payload map[string]string `json:"payload"`
+}
+
+func (p ScoredPoint) Text() string {
+	text, ok := p.Payload["text"]
+	if !ok {
+		return ""
+	}
+	return text
 }

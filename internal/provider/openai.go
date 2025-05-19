@@ -20,7 +20,20 @@ func NewOpenAIProvider() *OpenAIProvider {
 }
 
 func (p *OpenAIProvider) CreateCompletionStream(ctx context.Context, req CompletionRequest) (CompletionStream, error) {
-	messages := p.parseRequestHistory(req.History)
+	messages := make([]openai.ChatCompletionMessage, 0)
+
+	if req.SystemPrompt != "" {
+		messages = append(messages, openai.ChatCompletionMessage{
+			Role:    openai.ChatMessageRoleSystem,
+			Content: req.SystemPrompt,
+		})
+	}
+
+	msgHistory := p.parseRequestHistory(req.History)
+	if len(msgHistory) > 0 {
+		messages = append(messages, msgHistory...)
+	}
+
 	messages = append(messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleUser,
 		Content: req.Query,
@@ -59,7 +72,7 @@ type OpenAICompletionStream struct {
 	stream *openai.ChatCompletionStream
 }
 
-func (s *OpenAICompletionStream) Recv() (string, error) {
+func (s OpenAICompletionStream) Recv() (string, error) {
 	res, err := s.stream.Recv()
 	if err != nil {
 		return "", err
@@ -68,6 +81,6 @@ func (s *OpenAICompletionStream) Recv() (string, error) {
 	return res.Choices[0].Delta.Content, nil
 }
 
-func (s *OpenAICompletionStream) Close() error {
+func (s OpenAICompletionStream) Close() error {
 	return s.stream.Close()
 }
