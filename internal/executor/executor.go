@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/alan-mat/awe/internal/transport"
+	"github.com/alan-mat/awe/internal/vector"
 )
 
 type ErrOperatorNotFound struct {
@@ -16,29 +17,26 @@ func (e ErrOperatorNotFound) Error() string {
 	return fmt.Sprintf("invalid operator '%s' for executor '%s'", e.ExecutorName, e.OperatorName)
 }
 
-type ErrInvalidArguments struct {
-	ExecutorName string
-	OperatorName string
-	Accepts      string
-	Given        []any
+type ErrArgMissing struct {
+	ArgName string
 }
 
-func (e ErrInvalidArguments) Error() string {
-	return fmt.Sprintf("invalid arguments for operator '%s' in executor '%s': accepts '%s', got '%v'",
-		e.OperatorName, e.ExecutorName, e.Accepts, e.Given)
+func (e ErrArgMissing) Error() string {
+	return fmt.Sprintf("requested argument '%s' does not exist", e.ArgName)
 }
 
 type Executor interface {
-	Execute(ctx context.Context, params ExecutorParams) ExecutorResult
+	Execute(ctx context.Context, params *ExecutorParams) ExecutorResult
 }
 
 type ExecutorParams struct {
 	taskID string
 	query  string
 
-	Operator  string
-	Transport transport.Transport
-	Args      map[string]any
+	Operator    string
+	Transport   transport.Transport
+	VectorStore vector.Store
+	Args        map[string]any
 }
 
 type ExecutorParamOption func(*ExecutorParams)
@@ -48,7 +46,7 @@ func NewExecutorParams(id string, query string, options ...ExecutorParamOption) 
 		taskID:   id,
 		query:    query,
 		Operator: "",
-		Args:     nil,
+		Args:     make(map[string]any),
 	}
 	for _, opt := range options {
 		opt(ep)
@@ -64,6 +62,14 @@ func (p ExecutorParams) GetQuery() string {
 	return p.query
 }
 
+func (p ExecutorParams) GetArg(argName string) (any, error) {
+	arg, ok := p.Args[argName]
+	if !ok {
+		return nil, ErrArgMissing{ArgName: argName}
+	}
+	return arg, nil
+}
+
 func WithOperator(op string) ExecutorParamOption {
 	return func(ep *ExecutorParams) {
 		ep.Operator = op
@@ -73,6 +79,12 @@ func WithOperator(op string) ExecutorParamOption {
 func WithTransport(t transport.Transport) ExecutorParamOption {
 	return func(ep *ExecutorParams) {
 		ep.Transport = t
+	}
+}
+
+func WithVectorStore(vs vector.Store) ExecutorParamOption {
+	return func(ep *ExecutorParams) {
+		ep.VectorStore = vs
 	}
 }
 

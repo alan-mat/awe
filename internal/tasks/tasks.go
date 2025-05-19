@@ -11,6 +11,7 @@ import (
 	pb "github.com/alan-mat/awe/internal/proto"
 	"github.com/alan-mat/awe/internal/registry"
 	"github.com/alan-mat/awe/internal/transport"
+	"github.com/alan-mat/awe/internal/vector"
 
 	"github.com/hibiken/asynq"
 )
@@ -41,12 +42,14 @@ func NewChatTask(req *pb.ChatRequest) (*asynq.Task, error) {
 }
 
 type ChatTaskHandler struct {
-	transport transport.Transport
+	transport   transport.Transport
+	vectorStore vector.Store
 }
 
-func NewChatTaskHandler(transport transport.Transport) *ChatTaskHandler {
+func NewChatTaskHandler(transport transport.Transport, vectorStore vector.Store) *ChatTaskHandler {
 	return &ChatTaskHandler{
-		transport: transport,
+		transport:   transport,
+		vectorStore: vectorStore,
 	}
 }
 
@@ -67,10 +70,11 @@ func (h *ChatTaskHandler) ProcessTask(ctx context.Context, t *asynq.Task) error 
 		args[k] = v
 	}
 
-	params := *executor.NewExecutorParams(
+	params := executor.NewExecutorParams(
 		id,
 		p.Query,
 		executor.WithTransport(h.transport),
+		executor.WithVectorStore(h.vectorStore),
 		executor.WithArgs(args),
 	)
 

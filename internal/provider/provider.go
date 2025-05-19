@@ -50,6 +50,8 @@ func NewLMProvider(t LMProviderType) (LMProvider, error) {
 type EmbedProvider interface {
 	EmbedQuery(ctx context.Context, q string) ([]float32, error)
 	EmbedDocuments(ctx context.Context, docs []*EmbedDocumentRequest) ([]*DocumentEmbedding, error)
+
+	GetDimensions() uint
 }
 
 func NewEmbedProvider(t EmbedProviderType) (EmbedProvider, error) {

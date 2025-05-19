@@ -22,33 +22,41 @@ func NewWorkflowNode(executor Executor, operator string, args map[string]any) Wo
 	return node
 }
 
-func (n *WorkflowNode) Execute(ctx context.Context, params ExecutorParams) ExecutorResult {
+func (n *WorkflowNode) Execute(ctx context.Context, params *ExecutorParams) ExecutorResult {
 	return n.executor.Execute(ctx, params)
 }
 
 type Workflow struct {
-	identifier  string
-	description string
+	identifier     string
+	description    string
+	collectionName string
 
 	nodes []WorkflowNode
 }
 
-func NewWorkflow(identifier string, description string, nodes []WorkflowNode) *Workflow {
+func NewWorkflow(identifier string, description string, collectionName string, nodes []WorkflowNode) *Workflow {
 	workflow := &Workflow{
-		identifier:  identifier,
-		description: description,
-		nodes:       nodes,
+		identifier:     identifier,
+		description:    description,
+		collectionName: collectionName,
+		nodes:          nodes,
 	}
 	return workflow
 }
 
-func (w *Workflow) Execute(ctx context.Context, params ExecutorParams) ExecutorResult {
+func (w *Workflow) Execute(ctx context.Context, params *ExecutorParams) ExecutorResult {
 	nodeIdx := 0
+	params.Args["collection_name"] = w.collectionName
+
+	slog.Info("executing workflow", "workflowId", w.identifier, "params", params)
+
 	for {
 		node := w.nodes[nodeIdx]
 
 		params.Operator = node.operator
 		maps.Copy(params.Args, node.args)
+
+		slog.Info("executing node", "executor", node.executor, "op", node.operator, "args", node.args)
 
 		result := node.executor.Execute(ctx, params)
 		slog.Debug(fmt.Sprintf("%v\n", result))
@@ -61,6 +69,8 @@ func (w *Workflow) Execute(ctx context.Context, params ExecutorParams) ExecutorR
 		if nodeIdx >= len(w.nodes) {
 			break
 		}
+
+		maps.Copy(params.Args, result.Values)
 	}
 
 	return ExecutorResult{

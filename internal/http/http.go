@@ -141,6 +141,12 @@ func (c *Client) do(method string, path string, paylaod map[string]any) (*gohttp
 
 	if resp.StatusCode >= 400 {
 		respBytes, _ := io.ReadAll(resp.Body)
+
+		// truncate error responses
+		if len(respBytes) > 512 {
+			respBytes = respBytes[:512]
+		}
+
 		return nil, fmt.Errorf("(HTTP Error %d) %s", resp.StatusCode, string(respBytes))
 	}
 

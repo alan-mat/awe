@@ -10,3 +10,13 @@ workflows:
         operator: acc_stream
         args: 
           number: 129
+
+  index_local_files:
+    name: index_local
+    collection: awe_index
+    nodes:
+      - module: system.Reader
+        args:
+          path: ./files
+
+      - module: indexing.Simple

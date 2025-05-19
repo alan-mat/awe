@@ -137,6 +137,10 @@ func (p JinaAIProvider) EmbedDocuments(ctx context.Context, docs []*EmbedDocumen
 	return embeddings, nil
 }
 
+func (p JinaAIProvider) GetDimensions() uint {
+	return p.vectorDims
+}
+
 func (p JinaAIProvider) requestSegmenter(content string) (*jinaSegmentResponse, error) {
 	requestData := map[string]any{
 		"return_chunks":    true,
@@ -199,25 +203,14 @@ func (p JinaAIProvider) splitContentLen(maxLen int, doc *DocumentContent) []stri
 		return cts
 	}
 
-	nParts := (len(full) / (maxLen + 1)) * 2
-	nPages := len(doc.Pages) / nParts
-
-	start, end := 0, nPages
-	for _ = range nParts {
-		t := ""
-		ps := doc.Pages[start:end]
-
-		for _, p := range ps {
-			t += p.Text
+	acc := ""
+	for _, page := range doc.Pages {
+		if (len(acc) + len(page.Text)) >= maxLen {
+			cts = append(cts, acc)
+			acc = ""
 		}
-		cts = append(cts, t)
 
-		start = end
-		if (start + nPages) > len(doc.Pages) {
-			end = len(doc.Pages)
-		} else {
-			end = start + nPages
-		}
+		acc += page.Text
 	}
 
 	return cts

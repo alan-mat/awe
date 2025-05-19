@@ -27,20 +27,20 @@ func init() {
 
 type SimpleExecutor struct {
 	Provider  provider.LMProviderType
-	operators map[string]func(context.Context, executor.ExecutorParams) error
+	operators map[string]func(context.Context, *executor.ExecutorParams) error
 }
 
 func NewSimpleExecutor() *SimpleExecutor {
 	e := &SimpleExecutor{
 		Provider: provider.LMProviderTypeGemini,
 	}
-	e.operators = map[string]func(context.Context, executor.ExecutorParams) error{
+	e.operators = map[string]func(context.Context, *executor.ExecutorParams) error{
 		"generate": e.generate,
 	}
 	return e
 }
 
-func (e *SimpleExecutor) Execute(ctx context.Context, p executor.ExecutorParams) executor.ExecutorResult {
+func (e *SimpleExecutor) Execute(ctx context.Context, p *executor.ExecutorParams) executor.ExecutorResult {
 	if p.Operator == "" {
 		p.Operator = "generate"
 	}
@@ -56,7 +56,7 @@ func (e *SimpleExecutor) Execute(ctx context.Context, p executor.ExecutorParams)
 	return e.buildResult(p.Operator, err, nil)
 }
 
-func (e *SimpleExecutor) generate(ctx context.Context, p executor.ExecutorParams) error {
+func (e *SimpleExecutor) generate(ctx context.Context, p *executor.ExecutorParams) error {
 	msgId := 0
 	ms, err := p.Transport.GetMessageStream(p.GetTaskID())
 	if err != nil {

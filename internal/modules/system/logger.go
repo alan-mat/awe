@@ -1,4 +1,4 @@
-package internal
+package system
 
 import (
 	"context"
@@ -19,18 +19,18 @@ func init() {
 }
 
 type LoggerExecutor struct {
-	operators map[string]func(context.Context, executor.ExecutorParams) (map[string]any, error)
+	operators map[string]func(context.Context, *executor.ExecutorParams) (map[string]any, error)
 }
 
 func NewLoggerExecutor() *LoggerExecutor {
 	e := &LoggerExecutor{}
-	e.operators = map[string]func(context.Context, executor.ExecutorParams) (map[string]any, error){
+	e.operators = map[string]func(context.Context, *executor.ExecutorParams) (map[string]any, error){
 		"acc_stream": e.accStream,
 	}
 	return e
 }
 
-func (e *LoggerExecutor) Execute(ctx context.Context, p executor.ExecutorParams) executor.ExecutorResult {
+func (e *LoggerExecutor) Execute(ctx context.Context, p *executor.ExecutorParams) executor.ExecutorResult {
 	if p.Operator == "" {
 		p.Operator = "acc_stream"
 	}
@@ -50,7 +50,7 @@ func (e *LoggerExecutor) Execute(ctx context.Context, p executor.ExecutorParams)
 	return e.buildResult(p.Operator, err, vals)
 }
 
-func (e *LoggerExecutor) accStream(ctx context.Context, p executor.ExecutorParams) (map[string]any, error) {
+func (e *LoggerExecutor) accStream(ctx context.Context, p *executor.ExecutorParams) (map[string]any, error) {
 	ms, err := p.Transport.GetMessageStream(p.GetTaskID())
 	if err != nil {
 		slog.Warn("failed to create message stream", "id", p.GetTaskID())

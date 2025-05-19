@@ -18,8 +18,9 @@ type WorkflowNode struct {
 }
 
 type Workflow struct {
-	Identifier  string `yaml:"name"`
-	Description string `yaml:"description"`
+	Identifier     string `yaml:"name"`
+	Description    string `yaml:"description"`
+	CollectionName string `yaml:"collection"`
 
 	Nodes []WorkflowNode `yaml:"nodes"`
 }

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log/slog"
 	"os"
 
 	"github.com/goccy/go-yaml"
@@ -17,12 +18,7 @@ func ParseWorkflowConfig(path string) WorkflowConfig {
 		panic(err)
 	}
 
-	/* for name, workflow := range wc.Workflows {
-		fmt.Printf("%s - %s, %s\n", name, workflow.Identifier, workflow.Description)
-		for _, node := range workflow.Nodes {
-			fmt.Printf("mod: %s | op: %s | args: %v | type: %s\n", node.Module, node.Operator, node.Args, node.Type)
-		}
-	} */
+	slog.Info("parsed config", "value", wc)
 
 	return wc
 }

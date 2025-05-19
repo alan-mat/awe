@@ -102,6 +102,10 @@ func (p *GeminiProvider) EmbedDocuments(ctx context.Context, docs []*EmbedDocume
 	return embeddings, nil
 }
 
+func (p GeminiProvider) GetDimensions() uint {
+	return uint(*p.vectorDims)
+}
+
 func (p *GeminiProvider) parseRequestHistory(h []*message.Chat) []*genai.Content {
 	contents := make([]*genai.Content, len(h))
 	roleTypes := map[message.ChatRole]genai.Role{
