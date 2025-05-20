@@ -57,7 +57,7 @@ func NewSimpleExecutor() (*SimpleExecutor, error) {
 	return e, nil
 }
 
-func (e SimpleExecutor) Execute(ctx context.Context, p *executor.ExecutorParams) executor.ExecutorResult {
+func (e SimpleExecutor) Execute(ctx context.Context, p *executor.ExecutorParams) *executor.ExecutorResult {
 	if p.Operator == "" {
 		p.Operator = "index_files_base64"
 	}
@@ -179,8 +179,8 @@ func (e SimpleExecutor) parseAndSegmentFile(ctx context.Context, file *message.F
 	return chunks
 }
 
-func (e SimpleExecutor) buildResult(operator string, err error, values map[string]any) executor.ExecutorResult {
-	return executor.ExecutorResult{
+func (e SimpleExecutor) buildResult(operator string, err error, values map[string]any) *executor.ExecutorResult {
+	return &executor.ExecutorResult{
 		Name:     simpleExecutorDescriptor,
 		Operator: operator,
 		Err:      err,

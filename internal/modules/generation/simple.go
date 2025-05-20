@@ -38,7 +38,7 @@ func NewSimpleExecutor() *SimpleExecutor {
 	return e
 }
 
-func (e *SimpleExecutor) Execute(ctx context.Context, p *executor.ExecutorParams) executor.ExecutorResult {
+func (e *SimpleExecutor) Execute(ctx context.Context, p *executor.ExecutorParams) *executor.ExecutorResult {
 	if p.Operator == "" {
 		p.Operator = "generate"
 	}
@@ -107,8 +107,8 @@ func (e *SimpleExecutor) generate(ctx context.Context, p *executor.ExecutorParam
 	return nil
 }
 
-func (e *SimpleExecutor) buildResult(operator string, err error, values map[string]any) executor.ExecutorResult {
-	return executor.ExecutorResult{
+func (e *SimpleExecutor) buildResult(operator string, err error, values map[string]any) *executor.ExecutorResult {
+	return &executor.ExecutorResult{
 		Name:     simpleExecutorDescriptor,
 		Operator: operator,
 		Err:      err,

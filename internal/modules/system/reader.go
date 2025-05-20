@@ -35,7 +35,7 @@ func NewReaderExecutor() *ReaderExecutor {
 	return e
 }
 
-func (e *ReaderExecutor) Execute(ctx context.Context, p *executor.ExecutorParams) executor.ExecutorResult {
+func (e *ReaderExecutor) Execute(ctx context.Context, p *executor.ExecutorParams) *executor.ExecutorResult {
 	if p.Operator == "" {
 		p.Operator = "read_dir_base64"
 	}
@@ -99,8 +99,8 @@ func (e *ReaderExecutor) readDirBase64(ctx context.Context, p *executor.Executor
 	}, nil
 }
 
-func (e *ReaderExecutor) buildResult(operator string, err error, values map[string]any) executor.ExecutorResult {
-	return executor.ExecutorResult{
+func (e *ReaderExecutor) buildResult(operator string, err error, values map[string]any) *executor.ExecutorResult {
+	return &executor.ExecutorResult{
 		Name:     readerExecutorDescriptor,
 		Operator: operator,
 		Err:      err,

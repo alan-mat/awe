@@ -22,7 +22,7 @@ func NewWorkflowNode(executor Executor, operator string, args map[string]any) Wo
 	return node
 }
 
-func (n *WorkflowNode) Execute(ctx context.Context, params *ExecutorParams) ExecutorResult {
+func (n *WorkflowNode) Execute(ctx context.Context, params *ExecutorParams) *ExecutorResult {
 	return n.executor.Execute(ctx, params)
 }
 
@@ -44,7 +44,7 @@ func NewWorkflow(identifier string, description string, collectionName string, n
 	return workflow
 }
 
-func (w *Workflow) Execute(ctx context.Context, params *ExecutorParams) ExecutorResult {
+func (w *Workflow) Execute(ctx context.Context, params *ExecutorParams) *ExecutorResult {
 	nodeIdx := 0
 	params.Args["collection_name"] = w.collectionName
 
@@ -73,7 +73,7 @@ func (w *Workflow) Execute(ctx context.Context, params *ExecutorParams) Executor
 		maps.Copy(params.Args, result.Values)
 	}
 
-	return ExecutorResult{
+	return &ExecutorResult{
 		Name: w.identifier,
 		Err:  nil,
 	}

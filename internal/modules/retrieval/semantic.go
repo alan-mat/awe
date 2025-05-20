@@ -46,7 +46,7 @@ func NewSemanticExecutor() (*SemanticExecutor, error) {
 	return e, nil
 }
 
-func (e *SemanticExecutor) Execute(ctx context.Context, p *executor.ExecutorParams) executor.ExecutorResult {
+func (e *SemanticExecutor) Execute(ctx context.Context, p *executor.ExecutorParams) *executor.ExecutorResult {
 	if p.Operator == "" {
 		p.Operator = "dense"
 	}
@@ -97,8 +97,8 @@ func (e *SemanticExecutor) denseRetrieval(ctx context.Context, p *executor.Execu
 	}, nil
 }
 
-func (e *SemanticExecutor) buildResult(operator string, err error, values map[string]any) executor.ExecutorResult {
-	return executor.ExecutorResult{
+func (e *SemanticExecutor) buildResult(operator string, err error, values map[string]any) *executor.ExecutorResult {
+	return &executor.ExecutorResult{
 		Name:     semanticExecutorDescriptor,
 		Operator: operator,
 		Err:      err,

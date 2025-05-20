@@ -81,7 +81,7 @@ func NewAugmentedExecutor() (*AugmentedExecutor, error) {
 	return e, nil
 }
 
-func (e AugmentedExecutor) Execute(ctx context.Context, p *executor.ExecutorParams) executor.ExecutorResult {
+func (e AugmentedExecutor) Execute(ctx context.Context, p *executor.ExecutorParams) *executor.ExecutorResult {
 	if p.Operator == "" {
 		p.Operator = "gen_context"
 	}
@@ -89,7 +89,7 @@ func (e AugmentedExecutor) Execute(ctx context.Context, p *executor.ExecutorPara
 
 	opFunc, exists := e.operators[p.Operator]
 	if !exists {
-		return executor.ExecutorResult{
+		return &executor.ExecutorResult{
 			Name:     augmentedExecutorDescriptor,
 			Operator: p.Operator,
 			Err: executor.ErrOperatorNotFound{
@@ -102,7 +102,7 @@ func (e AugmentedExecutor) Execute(ctx context.Context, p *executor.ExecutorPara
 
 	vals, err := opFunc(ctx, p)
 
-	return executor.ExecutorResult{
+	return &executor.ExecutorResult{
 		Name:     augmentedExecutorDescriptor,
 		Operator: p.Operator,
 		Err:      err,

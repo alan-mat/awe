@@ -30,7 +30,7 @@ func NewLoggerExecutor() *LoggerExecutor {
 	return e
 }
 
-func (e *LoggerExecutor) Execute(ctx context.Context, p *executor.ExecutorParams) executor.ExecutorResult {
+func (e *LoggerExecutor) Execute(ctx context.Context, p *executor.ExecutorParams) *executor.ExecutorResult {
 	if p.Operator == "" {
 		p.Operator = "acc_stream"
 	}
@@ -67,8 +67,8 @@ func (e *LoggerExecutor) accStream(ctx context.Context, p *executor.ExecutorPara
 	return map[string]any{"content": text}, nil
 }
 
-func (e *LoggerExecutor) buildResult(operator string, err error, values map[string]any) executor.ExecutorResult {
-	return executor.ExecutorResult{
+func (e *LoggerExecutor) buildResult(operator string, err error, values map[string]any) *executor.ExecutorResult {
+	return &executor.ExecutorResult{
 		Name:     loggerExecutorDescriptor,
 		Operator: operator,
 		Err:      err,

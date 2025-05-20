@@ -38,7 +38,7 @@ func (e ErrInvalidArgumentType) Error() string {
 }
 
 type Executor interface {
-	Execute(ctx context.Context, params *ExecutorParams) ExecutorResult
+	Execute(ctx context.Context, params *ExecutorParams) *ExecutorResult
 }
 
 type ExecutorParams struct {
