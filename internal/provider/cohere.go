@@ -51,8 +51,16 @@ func NewCohereProvider() *CohereProvider {
 }
 
 func (p CohereProvider) CreateCompletionStream(ctx context.Context, req CompletionRequest) (CompletionStream, error) {
+	if req.Query == "" {
+		return nil, fmt.Errorf("completion request failed: missing parameter 'query' in request")
+	}
+
 	cohereReq := &cohere.V2ChatStreamRequest{
 		Model: "command-a-03-2025",
+	}
+
+	if req.ModelName != "" {
+		cohereReq.Model = req.ModelName
 	}
 
 	if req.SystemPrompt != "" {
@@ -78,7 +86,7 @@ func (p CohereProvider) CreateCompletionStream(ctx context.Context, req Completi
 
 	stream, err := p.client.V2.ChatStream(ctx, cohereReq)
 	if err != nil {
-		return nil, fmt.Errorf("chat streaming request failed: %e", err)
+		return nil, fmt.Errorf("chat streaming request failed: %w", err)
 	}
 
 	return &CohereCompletionStream{stream: stream}, nil
@@ -95,7 +103,7 @@ func (p CohereProvider) EmbedQuery(ctx context.Context, q string) ([]float32, er
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("embed request failed: %e", err)
+		return nil, fmt.Errorf("embed request failed: %w", err)
 	}
 
 	f32 := make([]float32, 0, len(resp.Embeddings.Float[0]))
@@ -189,6 +197,55 @@ func (p CohereProvider) EmbedDocuments(ctx context.Context, docs []*EmbedDocumen
 	return docEmbeddings, nil
 }
 
+func (p CohereProvider) GetDimensions() uint {
+	return 1024
+}
+
+func (p CohereProvider) Rerank(ctx context.Context, req RerankRequest) (*RerankResponse, error) {
+	if req.Query == "" {
+		return nil, fmt.Errorf("rerank request failed: missing parameter 'query' in request")
+	}
+
+	if len(req.Documents) == 0 {
+		return nil, fmt.Errorf("rerank request failed: missing parameter 'documents' in request")
+	}
+
+	returnDocuments := true
+	coReq := &cohere.V2RerankRequest{
+		Query:           req.Query,
+		Documents:       req.Documents,
+		Model:           "rerank-v3.5",
+		ReturnDocuments: &returnDocuments,
+	}
+
+	if req.ModelName != "" {
+		coReq.Model = req.ModelName
+	}
+
+	if req.Limit != 0 {
+		coReq.TopN = &req.Limit
+	}
+
+	resp, err := p.client.V2.Rerank(ctx, coReq)
+	if err != nil {
+		return nil, fmt.Errorf("rerank request failed: %w", err)
+	}
+
+	scoredDocs := make([]*ScoredDocument, 0, len(resp.Results))
+	for _, result := range resp.Results {
+		scoredDocs = append(scoredDocs, &ScoredDocument{
+			Document: result.Document.Text,
+			Score:    result.RelevanceScore,
+		})
+	}
+
+	return &RerankResponse{
+		Query:     req.Query,
+		Documents: scoredDocs,
+		ModelName: coReq.Model,
+	}, nil
+}
+
 func (p CohereProvider) parseRequestHistory(h []*message.Chat) cohere.ChatMessages {
 	messages := make([]*cohere.ChatMessageV2, 0, len(h))
 	for _, chatMsg := range h {
@@ -224,11 +281,17 @@ type CohereCompletionStream struct {
 }
 
 func (s CohereCompletionStream) Recv() (string, error) {
-	resp, err := s.stream.Recv()
-	if err != nil {
-		return "", err
+	for {
+		resp, err := s.stream.Recv()
+		slog.Error("", "resp", resp, "err", err)
+		if err != nil {
+			return "", err
+		}
+
+		if resp.ContentDelta != nil {
+			return *resp.ContentDelta.Delta.Message.Content.Text, nil
+		}
 	}
-	return resp.ContentDelta.String(), nil
 }
 
 func (s CohereCompletionStream) Close() error {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"strings"
 
 	"github.com/alan-mat/awe/internal/provider"
 )
@@ -27,12 +28,13 @@ type MessageStreamPayload struct {
 }
 
 func ProcessCompletionStream(ctx context.Context, ms MessageStream, cs provider.CompletionStream) (string, error) {
-	acc := ""
+	var acc, sink string
 	msgId := 0
+
 	for {
 		chunk, err := cs.Recv()
 		if errors.Is(err, io.EOF) {
-			return acc, nil
+			return sink, nil
 		}
 
 		if err != nil {
@@ -41,20 +43,26 @@ func ProcessCompletionStream(ctx context.Context, ms MessageStream, cs provider.
 				Content: "something went wrong",
 				Status:  "ERR",
 			})
-			return acc, err
+			return sink, err
 		}
 
 		acc += chunk
+		sink += chunk
+
+		if strings.TrimSpace(chunk) == "" {
+			continue
+		}
 
 		err = ms.Send(ctx, MessageStreamPayload{
 			ID:      msgId,
-			Content: chunk,
+			Content: acc,
 			Status:  "OK",
 		})
 		if err != nil {
-			slog.Debug("failed sending chunk to message stream", "chunk", chunk)
+			slog.Debug("failed sending chunk to message stream", "chunk", acc)
 		}
 
+		acc = ""
 		msgId += 1
 	}
 }

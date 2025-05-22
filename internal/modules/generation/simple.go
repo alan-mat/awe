@@ -51,6 +51,7 @@ func (e *SimpleExecutor) Execute(ctx context.Context, p *executor.ExecutorParams
 	}
 
 	err := opFunc(ctx, p)
+	slog.Error("", "error", err)
 	return e.buildResult(p.Operator, err, nil)
 }
 
@@ -65,7 +66,7 @@ func (e *SimpleExecutor) generate(ctx context.Context, p *executor.ExecutorParam
 		return fmt.Errorf("<empty query>: %w", asynq.SkipRetry)
 	}
 
-	prov, err := provider.NewLMProvider(provider.LMProviderTypeGemini)
+	prov, err := provider.NewLMProvider(provider.LMProviderTypeCohere)
 	if err != nil {
 		slog.Warn("error creating new lmprovider, cancelling task")
 		ms.Send(ctx, transport.MessageStreamPayload{
@@ -101,7 +102,7 @@ func (e *SimpleExecutor) generate(ctx context.Context, p *executor.ExecutorParam
 
 	_, err = transport.ProcessCompletionStream(ctx, ms, cs)
 	if err != nil {
-		return fmt.Errorf("failed to process completion stream: %e", err)
+		return fmt.Errorf("failed to process completion stream: %w", err)
 	}
 
 	return nil

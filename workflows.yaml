@@ -26,3 +26,15 @@ workflows:
       - module: retrieval.Semantic
       - module: generation.Augmented
       - module: system.Logger
+
+  rag_rr:
+    name: rag_rr
+    collection: awe_index
+    nodes:
+      - module: retrieval.Semantic
+      - module: post.Rerank
+        args:
+          top_n: 10
+
+      - module: generation.Augmented
+      - module: system.Logger

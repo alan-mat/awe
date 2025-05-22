@@ -13,7 +13,6 @@ import (
 	"github.com/alan-mat/awe/internal/provider"
 	"github.com/alan-mat/awe/internal/registry"
 	"github.com/alan-mat/awe/internal/transport"
-	"github.com/alan-mat/awe/internal/vector"
 )
 
 var augmentedExecutorDescriptor = "generation.Augmented"
@@ -65,7 +64,7 @@ func NewAugmentedExecutor() (*AugmentedExecutor, error) {
 	lp, err2 := provider.NewLMProvider(provider.LMProviderTypeGemini)
 	joinedErr := errors.Join(err, err2)
 	if joinedErr != nil {
-		return nil, fmt.Errorf("failed to initialize default providers: %e", err)
+		return nil, fmt.Errorf("failed to initialize default providers: %w", err)
 	}
 
 	templ := template.Must(template.New("promptGenerateWithContext").Parse(promptGenerateWithContext))
@@ -111,19 +110,18 @@ func (e AugmentedExecutor) Execute(ctx context.Context, p *executor.ExecutorPara
 }
 
 func (e AugmentedExecutor) generateWithContext(ctx context.Context, p *executor.ExecutorParams) (map[string]any, error) {
-	// 'gen_context' requires following parameter args:
-	// context_points - name of the collection to use for the vector store
-	contextPoints, err := executor.GetTypedArg[[]*vector.ScoredPoint](p, "context_points")
+	// 'gen_context' requires one of the following parameter args:
+	// context_docs - slice of scored documents to be used as context
+	//					(from vector store or after post-retrieval)
+	contextPoints, err := executor.GetTypedArg[[]*provider.ScoredDocument](p, "context_docs")
 	if err != nil {
 		return nil, err
 	}
 
 	modelContext := ""
 	for _, sp := range contextPoints {
-		slog.Info("got point", "id", sp.ID, "score", sp.Score, "payload", sp.Payload)
-		if t, ok := sp.Payload["text"]; ok {
-			modelContext += strings.TrimSpace(t) + "\n---\n"
-		}
+		slog.Info("got point", "score", sp.Score, "text", sp.Document)
+		modelContext += strings.TrimSpace(sp.Document) + "\n---\n"
 	}
 
 	type templatePayload struct {
@@ -134,7 +132,7 @@ func (e AugmentedExecutor) generateWithContext(ctx context.Context, p *executor.
 	var buf bytes.Buffer
 	err = e.templateGenerateWithContext.Execute(&buf, tp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse prompt template for query '%s': %e", p.GetQuery(), err)
+		return nil, fmt.Errorf("failed to parse prompt template for query '%s': %w", p.GetQuery(), err)
 	}
 	parsedPrompt := buf.String()
 
@@ -164,7 +162,7 @@ func (e AugmentedExecutor) generateWithContext(ctx context.Context, p *executor.
 
 	output, err := transport.ProcessCompletionStream(ctx, msgStream, stream)
 	if err != nil {
-		return nil, fmt.Errorf("failed to process completion stream: %e", err)
+		return nil, fmt.Errorf("failed to process completion stream: %w", err)
 	}
 
 	return map[string]any{

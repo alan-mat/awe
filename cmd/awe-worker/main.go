@@ -16,6 +16,7 @@ import (
 
 	_ "github.com/alan-mat/awe/internal/modules/generation"
 	_ "github.com/alan-mat/awe/internal/modules/indexing"
+	_ "github.com/alan-mat/awe/internal/modules/postretrieval"
 	_ "github.com/alan-mat/awe/internal/modules/retrieval"
 	_ "github.com/alan-mat/awe/internal/modules/system"
 )

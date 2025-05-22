@@ -62,6 +62,7 @@ func (w *Workflow) Execute(ctx context.Context, params *ExecutorParams) *Executo
 		slog.Debug(fmt.Sprintf("%v\n", result))
 
 		if result.Err != nil {
+			slog.Error("", "err", result.Err)
 			return result
 		}
 
