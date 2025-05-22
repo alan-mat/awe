@@ -159,7 +159,8 @@ func (p CohereProvider) EmbedDocuments(ctx context.Context, docs []*EmbedDocumen
 
 	for _, ereq := range embedRequests {
 		wg.Add(1)
-		ctxTimeout, _ := context.WithTimeout(ctx, 30*time.Second)
+		ctxTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
 
 		go func(ctx context.Context, ereq *cohereEmbedRequestWrapper) {
 			defer wg.Done()
@@ -283,7 +284,6 @@ type CohereCompletionStream struct {
 func (s CohereCompletionStream) Recv() (string, error) {
 	for {
 		resp, err := s.stream.Recv()
-		slog.Error("", "resp", resp, "err", err)
 		if err != nil {
 			return "", err
 		}

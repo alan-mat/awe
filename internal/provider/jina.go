@@ -6,6 +6,8 @@ import (
 	"errors"
 	"log/slog"
 	"os"
+	"regexp"
+	"strings"
 
 	"github.com/alan-mat/awe/internal/http"
 	"golang.org/x/sync/errgroup"
@@ -78,9 +80,30 @@ func (p JinaAIProvider) ChunkDocument(ctx context.Context, doc *DocumentContent)
 		return nil, err
 	}
 
+	regex := regexp.MustCompile(`\w+`)
 	chunks := make([]string, 0, len(responses))
+	var acc string
 	for _, resp := range responses {
-		chunks = append(chunks, resp.Chunks...)
+		for _, c := range resp.Chunks {
+			if !regex.MatchString(c) {
+				// no words, skip it
+				continue
+			}
+
+			if strings.TrimSpace(c) == "[^0]" {
+				// ignore this
+				continue
+			}
+
+			acc += c
+			if strings.HasPrefix(strings.TrimSpace(c), "#") {
+				// interpret # as markdown headings
+				continue
+			} else {
+				chunks = append(chunks, strings.TrimSpace(acc))
+				acc = ""
+			}
+		}
 	}
 
 	return chunks, nil
@@ -144,7 +167,7 @@ func (p JinaAIProvider) GetDimensions() uint {
 func (p JinaAIProvider) requestSegmenter(content string) (*jinaSegmentResponse, error) {
 	requestData := map[string]any{
 		"return_chunks":    true,
-		"max_chunk_length": 1000,
+		"max_chunk_length": 768,
 		"content":          content,
 	}
 

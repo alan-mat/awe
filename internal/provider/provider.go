@@ -28,6 +28,7 @@ const (
 
 const (
 	DocumentSegmentProviderTypeJinaAI = iota
+	DocumentSegmentProviderTypeGemini
 )
 
 const (
@@ -101,6 +102,8 @@ func NewDocumentSegmentProvider(t DocumentSegmentProviderType) (DocumentSegmentP
 	switch t {
 	case DocumentSegmentProviderTypeJinaAI:
 		return NewJinaAIProvider(), nil
+	case DocumentSegmentProviderTypeGemini:
+		return NewGeminiProvider(), nil
 	default:
 		return nil, ErrInvalidProviderType
 	}

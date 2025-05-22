@@ -11,7 +11,7 @@ workflows:
 
   index_local_files:
     name: index_local
-    collection: awe_index
+    collection: awe_new
     nodes:
       - module: system.Reader
         args:

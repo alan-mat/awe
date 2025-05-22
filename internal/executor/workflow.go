@@ -62,7 +62,7 @@ func (w *Workflow) Execute(ctx context.Context, params *ExecutorParams) *Executo
 		slog.Debug(fmt.Sprintf("%v\n", result))
 
 		if result.Err != nil {
-			slog.Error("", "err", result.Err)
+			slog.Error("failed to execute node", "error", fmt.Sprintf("(%T): %v", result.Err, result.Err))
 			return result
 		}
 

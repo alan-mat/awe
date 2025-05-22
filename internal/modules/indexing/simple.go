@@ -126,7 +126,8 @@ func (e SimpleExecutor) indexFilesBase64(ctx context.Context, p *executor.Execut
 
 	for _, file := range files {
 		wg.Add(1)
-		ctxTimeout, _ := context.WithTimeout(ctx, 30*time.Second)
+		ctxTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
 
 		go func(ctx context.Context, file *message.FileContent) {
 			defer wg.Done()
@@ -141,6 +142,8 @@ func (e SimpleExecutor) indexFilesBase64(ctx context.Context, p *executor.Execut
 				docReqMu.Unlock()
 			}
 		}(ctxTimeout, file)
+
+		time.Sleep(100 * time.Millisecond)
 	}
 	wg.Wait()
 

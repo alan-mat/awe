@@ -66,7 +66,7 @@ func (e *SimpleExecutor) generate(ctx context.Context, p *executor.ExecutorParam
 		return fmt.Errorf("<empty query>: %w", asynq.SkipRetry)
 	}
 
-	prov, err := provider.NewLMProvider(provider.LMProviderTypeCohere)
+	prov, err := provider.NewLMProvider(provider.LMProviderTypeGemini)
 	if err != nil {
 		slog.Warn("error creating new lmprovider, cancelling task")
 		ms.Send(ctx, transport.MessageStreamPayload{
