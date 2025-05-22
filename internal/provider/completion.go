@@ -9,7 +9,11 @@ import (
 )
 
 type CompletionRequest struct {
-	Query        string
+	// Required
+	Query string
+
+	// Optional params
+	ModelName    string
 	SystemPrompt string
 	History      []*message.Chat
 }

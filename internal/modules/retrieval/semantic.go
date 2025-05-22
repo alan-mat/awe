@@ -92,8 +92,22 @@ func (e *SemanticExecutor) denseRetrieval(ctx context.Context, p *executor.Execu
 		return nil, fmt.Errorf("failed to get results for query '%s': %e", p.GetQuery(), err)
 	}
 
+	scoredDocs := make([]*provider.ScoredDocument, 0, len(points))
+	for _, p := range points {
+		t, ok := p.Payload["text"]
+		if !ok {
+			slog.Warn("malformed retrieved context point: missing 'text' field in payload", "id", p.ID, "payload", p.Payload)
+			continue
+		}
+		scoredDocs = append(scoredDocs, &provider.ScoredDocument{
+			Document: t,
+			Score:    float64(p.Score),
+		})
+	}
+
 	return map[string]any{
 		"context_points": points,
+		"context_docs":   scoredDocs,
 	}, nil
 }
 
