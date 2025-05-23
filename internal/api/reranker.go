@@ -18,8 +18,3 @@ type RerankResponse struct {
 
 	ModelName string
 }
-
-type ScoredDocument struct {
-	Document string
-	Score    float64
-}

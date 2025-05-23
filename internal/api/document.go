@@ -16,3 +16,13 @@ func (dc DocumentContent) Text() string {
 	}
 	return text
 }
+
+type ScoredDocument struct {
+	// Required
+	Content string
+	Score   float64
+
+	// Optional
+	Title string
+	Url   string
+}

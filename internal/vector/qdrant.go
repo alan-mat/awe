@@ -3,6 +3,7 @@ package vector
 import (
 	"context"
 
+	"github.com/alan-mat/awe/internal/api"
 	"github.com/qdrant/go-client/qdrant"
 )
 
@@ -69,7 +70,7 @@ func (s QdrantStore) Upsert(ctx context.Context, collectionName string, points [
 	return err
 }
 
-func (s QdrantStore) Query(ctx context.Context, params *QueryParams) ([]*ScoredPoint, error) {
+func (s QdrantStore) Query(ctx context.Context, params *QueryParams) ([]*api.ScoredDocument, error) {
 	queryPoints := &qdrant.QueryPoints{
 		CollectionName: params.collection,
 		Query:          qdrant.NewQuery(params.query...),
@@ -98,7 +99,7 @@ func (s QdrantStore) Query(ctx context.Context, params *QueryParams) ([]*ScoredP
 		return nil, err
 	}
 
-	scoredPoints := make([]*ScoredPoint, 0, len(res))
+	scoredDocs := make([]*api.ScoredDocument, 0, len(res))
 	for _, sp := range res {
 		payload := make(map[string]string)
 		for k, v := range sp.Payload {
@@ -107,14 +108,24 @@ func (s QdrantStore) Query(ctx context.Context, params *QueryParams) ([]*ScoredP
 			}
 		}
 
-		scoredPoints = append(scoredPoints, &ScoredPoint{
-			ID:      sp.Id.GetUuid(),
-			Score:   sp.Score,
-			Payload: payload,
-		})
+		doc := &api.ScoredDocument{
+			Score: float64(sp.Score),
+		}
+
+		if content, ok := payload["text"]; ok {
+			doc.Content = content
+		}
+		if title, ok := payload["title"]; ok {
+			doc.Title = title
+		}
+		if url, ok := payload["source_url"]; ok {
+			doc.Url = url
+		}
+
+		scoredDocs = append(scoredDocs, doc)
 	}
 
-	return scoredPoints, nil
+	return scoredDocs, nil
 }
 
 func (s QdrantStore) Close() error {

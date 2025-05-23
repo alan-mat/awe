@@ -10,7 +10,6 @@ import (
 	"github.com/alan-mat/awe/internal/executor"
 	"github.com/alan-mat/awe/internal/provider"
 	"github.com/alan-mat/awe/internal/registry"
-	"github.com/alan-mat/awe/internal/vector"
 )
 
 var rerankExecutorDescriptor = "post.Rerank"
@@ -79,8 +78,8 @@ func (e RerankExecutor) Execute(ctx context.Context, p *executor.ExecutorParams)
 
 func (e RerankExecutor) cohereRerank(ctx context.Context, p *executor.ExecutorParams) (map[string]any, error) {
 	// 'cohere_rerank' requires following parameter args:
-	// context_points - slice of scored points to be used as context (from vector store)
-	contextPoints, err := executor.GetTypedArg[[]*vector.ScoredPoint](p, "context_points")
+	// context_docs - slice of scored documents to be used as context
+	context, err := executor.GetTypedArg[[]*api.ScoredDocument](p, "context_docs")
 	if err != nil {
 		return nil, err
 	}
@@ -100,13 +99,12 @@ func (e RerankExecutor) cohereRerank(ctx context.Context, p *executor.ExecutorPa
 		topN = int(topN_raw)
 	}
 
-	texts := make([]string, 0, len(contextPoints))
-	for _, sp := range contextPoints {
-		if t, ok := sp.Payload["text"]; ok {
-			slog.Info("got point", "id", sp.ID, "score", sp.Score, "text", t)
-			texts = append(texts, t)
+	texts := make([]string, 0, len(context))
+	for _, sp := range context {
+		if sp.Content == "" {
+			slog.Warn("malformed retrieved context document: missing content", "doc", sp)
 		} else {
-			slog.Warn("malformed retrieved context point: missing 'text' field in payload", "id", sp.ID, "payload", sp.Payload)
+			texts = append(texts, sp.Content)
 		}
 	}
 
@@ -124,6 +122,7 @@ func (e RerankExecutor) cohereRerank(ctx context.Context, p *executor.ExecutorPa
 	}
 
 	return map[string]any{
-		"context_docs": resp.Documents,
+		"context_docs":    resp.Documents,
+		"replace_context": true,
 	}, nil
 }

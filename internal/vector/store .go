@@ -32,7 +32,7 @@ type Store interface {
 	Upsert(ctx context.Context, collectionName string, points []*Point) error
 	//Delete()
 
-	Query(ctx context.Context, params *QueryParams) ([]*ScoredPoint, error)
+	Query(ctx context.Context, params *QueryParams) ([]*api.ScoredDocument, error)
 
 	Close() error
 }
@@ -131,18 +131,4 @@ func WithFilter(filter *QueryMatch) QueryParamsOption {
 	return func(qp *QueryParams) {
 		qp.filters = append(qp.filters, filter)
 	}
-}
-
-type ScoredPoint struct {
-	ID      string            `json:"id"`
-	Score   float32           `json:"score"`
-	Payload map[string]string `json:"payload"`
-}
-
-func (p ScoredPoint) Text() string {
-	text, ok := p.Payload["text"]
-	if !ok {
-		return ""
-	}
-	return text
 }

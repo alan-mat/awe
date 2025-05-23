@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"math"
 
-	"github.com/alan-mat/awe/internal/api"
 	"github.com/alan-mat/awe/internal/executor"
 	"github.com/alan-mat/awe/internal/provider"
 	"github.com/alan-mat/awe/internal/registry"
@@ -100,27 +99,13 @@ func (e *SemanticExecutor) denseRetrieval(ctx context.Context, p *executor.Execu
 		vector.WithLimit(topN),
 	)
 
-	points, err := p.VectorStore.Query(ctx, queryParams)
+	docs, err := p.VectorStore.Query(ctx, queryParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get results for query '%s': %e", p.GetQuery(), err)
 	}
 
-	scoredDocs := make([]*api.ScoredDocument, 0, len(points))
-	for _, p := range points {
-		t, ok := p.Payload["text"]
-		if !ok {
-			slog.Warn("malformed retrieved context point: missing 'text' field in payload", "id", p.ID, "payload", p.Payload)
-			continue
-		}
-		scoredDocs = append(scoredDocs, &api.ScoredDocument{
-			Document: t,
-			Score:    float64(p.Score),
-		})
-	}
-
 	return map[string]any{
-		"context_points": points,
-		"context_docs":   scoredDocs,
+		"context_docs": docs,
 	}, nil
 }
 

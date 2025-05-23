@@ -114,15 +114,15 @@ func (e AugmentedExecutor) generateWithContext(ctx context.Context, p *executor.
 	// 'gen_context' requires one of the following parameter args:
 	// context_docs - slice of scored documents to be used as context
 	//					(from vector store or after post-retrieval)
-	contextPoints, err := executor.GetTypedArg[[]*api.ScoredDocument](p, "context_docs")
+	context, err := executor.GetTypedArg[[]*api.ScoredDocument](p, "context_docs")
 	if err != nil {
 		return nil, err
 	}
 
 	modelContext := ""
-	for _, sp := range contextPoints {
-		slog.Info("got point", "score", sp.Score, "text", sp.Document)
-		modelContext += strings.TrimSpace(sp.Document) + "\n---\n"
+	for _, sp := range context {
+		slog.Info("got point", "score", sp.Score, "text", sp.Content)
+		modelContext += strings.TrimSpace(sp.Content) + "\n---\n"
 	}
 
 	type templatePayload struct {
