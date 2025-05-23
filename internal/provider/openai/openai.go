@@ -2,20 +2,25 @@ package openai
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/alan-mat/awe/internal/api"
 	"github.com/sashabaranov/go-openai"
 )
 
+const embedMaxDocsLength = 2048
+
 type OpenAIProvider struct {
-	client *openai.Client
+	client     *openai.Client
+	vectorDims int
 }
 
 func New() *OpenAIProvider {
 	c := openai.NewClient(os.Getenv("OPENAI_API_KEY"))
 	return &OpenAIProvider{
-		client: c,
+		client:     c,
+		vectorDims: 1024,
 	}
 }
 
@@ -82,6 +87,61 @@ func (p OpenAIProvider) Chat(ctx context.Context, req api.ChatRequest) (api.Comp
 		stream: s,
 	}
 	return completionStream, nil
+}
+
+func (p OpenAIProvider) EmbedQuery(ctx context.Context, q string) ([]float32, error) {
+	openaiReq := &openai.EmbeddingRequestStrings{
+		Input:          []string{q},
+		Model:          "text-embedding-3-small",
+		EncodingFormat: "float",
+		Dimensions:     p.vectorDims,
+	}
+
+	res, err := p.client.CreateEmbeddings(ctx, openaiReq)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Data[0].Embedding, nil
+}
+
+func (p OpenAIProvider) EmbedDocuments(ctx context.Context, docs []*api.EmbedDocumentRequest) ([]*api.DocumentEmbedding, error) {
+	docEmbeddings := make([]*api.DocumentEmbedding, 0, len(docs))
+
+	for _, doc := range docs {
+		if len(doc.Chunks) > embedMaxDocsLength {
+			return nil, fmt.Errorf("length of chunks exceeds limit: accepts '%d', received '%d'", embedMaxDocsLength, len(doc.Chunks))
+		}
+
+		openaiReq := &openai.EmbeddingRequestStrings{
+			Input:          doc.Chunks,
+			Model:          "text-embedding-3-small",
+			EncodingFormat: "float",
+			Dimensions:     p.vectorDims,
+		}
+
+		res, err := p.client.CreateEmbeddings(ctx, openaiReq)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create embeddings for document '%s': %w", doc.Title, err)
+		}
+
+		vals := make([][]float32, 0, len(res.Data))
+		for _, e := range res.Data {
+			vals = append(vals, e.Embedding)
+		}
+
+		docEmbeddings = append(docEmbeddings, &api.DocumentEmbedding{
+			Title:  doc.Title,
+			Chunks: doc.Chunks,
+			Values: vals,
+		})
+	}
+
+	return docEmbeddings, nil
+}
+
+func (p OpenAIProvider) GetDimensions() uint {
+	return uint(p.vectorDims)
 }
 
 func (p OpenAIProvider) parseRequestHistory(h []*api.ChatMessage) []openai.ChatCompletionMessage {

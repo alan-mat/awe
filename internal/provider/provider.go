@@ -28,6 +28,7 @@ const (
 	EmbedderTypeGemini = iota
 	EmbedderTypeJina
 	EmbedderTypeCohere
+	EmbedderTypeOpenai
 )
 
 const (
@@ -85,6 +86,8 @@ func NewEmbedder(t EmbedderType) (Embedder, error) {
 		return jina.New(), nil
 	case EmbedderTypeCohere:
 		return cohere.New(), nil
+	case EmbedderTypeOpenai:
+		return openai.New(), nil
 	default:
 		return nil, ErrInvalidProviderType
 	}
