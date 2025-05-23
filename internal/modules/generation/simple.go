@@ -34,7 +34,7 @@ type SimpleExecutor struct {
 }
 
 func NewSimpleExecutor() (*SimpleExecutor, error) {
-	lp, err := provider.NewLMProvider(provider.LMProviderTypeGemini)
+	lp, err := provider.NewLMProvider(provider.LMProviderTypeCohere)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize default providers: %w", err)
 	}

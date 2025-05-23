@@ -66,6 +66,12 @@ func (w *Workflow) Execute(ctx context.Context, params *ExecutorParams) *Executo
 			return result
 		}
 
+		if query_transformed, ok := result.Values["query_transformed"].(string); ok {
+			// node executor returned a new transformed query
+			// set it as new query in params
+			params = params.WithQuery(query_transformed)
+		}
+
 		nodeIdx++
 		if nodeIdx >= len(w.nodes) {
 			break

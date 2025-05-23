@@ -260,10 +260,12 @@ func (p CohereProvider) Rerank(ctx context.Context, req RerankRequest) (*RerankR
 
 	scoredDocs := make([]*ScoredDocument, 0, len(resp.Results))
 	for _, result := range resp.Results {
-		scoredDocs = append(scoredDocs, &ScoredDocument{
-			Document: result.Document.Text,
-			Score:    result.RelevanceScore,
-		})
+		if result.RelevanceScore >= RerankScoreThreshold {
+			scoredDocs = append(scoredDocs, &ScoredDocument{
+				Document: result.Document.Text,
+				Score:    result.RelevanceScore,
+			})
+		}
 	}
 
 	return &RerankResponse{
@@ -310,6 +312,9 @@ type CohereCompletionStream struct {
 func (s CohereCompletionStream) Recv() (string, error) {
 	for {
 		resp, err := s.stream.Recv()
+
+		slog.Info("cohere", "resp", resp, "err", err)
+
 		if err != nil {
 			return "", err
 		}

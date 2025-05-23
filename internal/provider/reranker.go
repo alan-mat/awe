@@ -1,5 +1,7 @@
 package provider
 
+const RerankScoreThreshold = 0.5
+
 type RerankRequest struct {
 	// Required params
 	Query     string

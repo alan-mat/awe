@@ -60,7 +60,7 @@ func (p OllamaProvider) Generate(ctx context.Context, req GenerationRequest) (Co
 		},
 	}
 
-	respBody, err := p.client.RequestStream(http.MethodPost, "/api/chat", requestData)
+	respBody, err := p.client.RequestStream(http.MethodPost, "/api/generate", requestData)
 	if err != nil {
 		return nil, fmt.Errorf("completion request failed: %w", err)
 	}

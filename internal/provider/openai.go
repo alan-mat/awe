@@ -20,22 +20,28 @@ func NewOpenAIProvider() *OpenAIProvider {
 }
 
 func (p OpenAIProvider) Generate(ctx context.Context, req GenerationRequest) (CompletionStream, error) {
-	openaiReq := &openai.CompletionRequest{
-		Prompt:      req.Prompt,
+	openaiReq := openai.ChatCompletionRequest{
+		Model:       openai.GPT4Dot1Nano,
 		Temperature: req.Temperature,
-		Model:       openai.GPT4Dot1Mini,
+		Messages: []openai.ChatCompletionMessage{
+			{
+				Role:    openai.ChatMessageRoleUser,
+				Content: req.Prompt,
+			},
+		},
+		Stream: true,
 	}
 
 	if req.ModelName != "" {
 		openaiReq.Model = req.ModelName
 	}
 
-	s, err := p.client.CreateCompletionStream(ctx, *openaiReq)
+	s, err := p.client.CreateChatCompletionStream(ctx, openaiReq)
 	if err != nil {
 		return nil, err
 	}
 
-	completionStream := &OpenAIGenerationStream{
+	completionStream := &OpenAIChatStream{
 		stream: s,
 	}
 	return completionStream, nil
@@ -90,7 +96,7 @@ func (p OpenAIProvider) parseRequestHistory(h []*message.Chat) []openai.ChatComp
 	return msgs
 }
 
-type OpenAIGenerationStream struct {
+/* type OpenAIGenerationStream struct {
 	stream *openai.CompletionStream
 }
 
@@ -105,7 +111,7 @@ func (s OpenAIGenerationStream) Recv() (string, error) {
 
 func (s OpenAIGenerationStream) Close() error {
 	return s.stream.Close()
-}
+} */
 
 type OpenAIChatStream struct {
 	stream *openai.ChatCompletionStream
