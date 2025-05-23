@@ -56,18 +56,20 @@ func StreamReadAll(ctx context.Context, stream CompletionStream) (string, error)
 	go func() {
 		defer close(dataChan)
 
-		chunk, err := stream.Recv()
+		for {
+			chunk, err := stream.Recv()
 
-		if errors.Is(err, io.EOF) {
-			return
+			if errors.Is(err, io.EOF) {
+				return
+			}
+
+			if err != nil {
+				dataChan <- completionStreamPayload{err: err}
+				return
+			}
+
+			dataChan <- completionStreamPayload{content: chunk}
 		}
-
-		if err != nil {
-			dataChan <- completionStreamPayload{err: err}
-			return
-		}
-
-		dataChan <- completionStreamPayload{content: chunk}
 	}()
 
 	var acc string
