@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
 
 	"github.com/alan-mat/awe/internal/api"
 	"github.com/alan-mat/awe/internal/executor"
@@ -33,7 +34,7 @@ type SemanticExecutor struct {
 }
 
 func NewSemanticExecutor() (*SemanticExecutor, error) {
-	ep, err := provider.NewEmbedder(provider.EmbedderTypeJina)
+	ep, err := provider.NewEmbedder(provider.EmbedderTypeOpenai)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize default providers: %e", err)
 	}
@@ -81,11 +82,22 @@ func (e *SemanticExecutor) denseRetrieval(ctx context.Context, p *executor.Execu
 		return nil, fmt.Errorf("failed to embed query '%s': %e", p.GetQuery(), err)
 	}
 
+	// Optional
+	// top_n - limit the amount of documents returned after reranking
+	var topN uint = 25
+	topN_raw, err := executor.GetTypedArg[uint64](p, "top_n")
+	if err == nil {
+		if topN_raw > uint64(math.MaxInt64) {
+			return nil, fmt.Errorf("top_n value is of out int64 range")
+		}
+		topN = uint(topN_raw)
+	}
+
 	queryParams := vector.NewQueryParams(
 		collectionName,
 		vec,
 		vector.WithPayload(true),
-		vector.WithLimit(25),
+		vector.WithLimit(topN),
 	)
 
 	points, err := p.VectorStore.Query(ctx, queryParams)
