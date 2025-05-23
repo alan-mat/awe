@@ -43,7 +43,8 @@ type DocumentSegmentProviderType int
 type RerankerType int
 
 type LMProvider interface {
-	CreateCompletionStream(context.Context, CompletionRequest) (CompletionStream, error)
+	Generate(ctx context.Context, req GenerationRequest) (CompletionStream, error)
+	Chat(ctx context.Context, req ChatRequest) (CompletionStream, error)
 }
 
 func NewLMProvider(t LMProviderType) (LMProvider, error) {

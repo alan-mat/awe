@@ -8,7 +8,7 @@ import (
 	"github.com/alan-mat/awe/internal/message"
 )
 
-type CompletionRequest struct {
+type ChatRequest struct {
 	// Required
 	Query string
 
@@ -16,6 +16,23 @@ type CompletionRequest struct {
 	ModelName    string
 	SystemPrompt string
 	History      []*message.Chat
+}
+
+type GenerationRequest struct {
+	// Required
+	Prompt string
+
+	// Optional params
+	ModelName   string
+	Temperature float32
+}
+
+func FromPrompt(prompt string) *GenerationRequest {
+	return &GenerationRequest{
+		Prompt:      prompt,
+		ModelName:   "",
+		Temperature: 0.7,
+	}
 }
 
 type CompletionStream interface {

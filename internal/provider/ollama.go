@@ -24,10 +24,11 @@ type ollamaChatMessage struct {
 	Content string `json:"content"`
 }
 
-type ollamaChatStreamResponse struct {
+type ollamaStreamResponse struct {
 	Model     string            `json:"model"`
 	CreatedAt string            `json:"created_at"`
 	Message   ollamaChatMessage `json:"message"`
+	Response  string            `json:"response"`
 	Done      bool              `json:"done"`
 }
 
@@ -43,7 +44,31 @@ func NewOllamaProvider() *OllamaProvider {
 	return p
 }
 
-func (p OllamaProvider) CreateCompletionStream(ctx context.Context, req CompletionRequest) (CompletionStream, error) {
+func (p OllamaProvider) Generate(ctx context.Context, req GenerationRequest) (CompletionStream, error) {
+	var model string
+	if req.ModelName != "" {
+		model = req.ModelName
+	} else {
+		model = p.defaultModel
+	}
+
+	requestData := map[string]any{
+		"model":  model,
+		"prompt": req.Prompt,
+		"options": map[string]any{
+			"temperature": req.Temperature,
+		},
+	}
+
+	respBody, err := p.client.RequestStream(http.MethodPost, "/api/chat", requestData)
+	if err != nil {
+		return nil, fmt.Errorf("completion request failed: %w", err)
+	}
+
+	return NewOllamaCompletionStream(respBody, false), nil
+}
+
+func (p OllamaProvider) Chat(ctx context.Context, req ChatRequest) (CompletionStream, error) {
 	if req.Query == "" {
 		return nil, fmt.Errorf("completion request failed: missing parameter 'query' in request")
 	}
@@ -85,19 +110,21 @@ func (p OllamaProvider) CreateCompletionStream(ctx context.Context, req Completi
 		return nil, fmt.Errorf("completion request failed: %w", err)
 	}
 
-	return NewOllamaCompletionStream(respBody), nil
+	return NewOllamaCompletionStream(respBody, true), nil
 }
 
 type OllamaCompletionStream struct {
 	body   io.ReadCloser
 	reader *bufio.Reader
+	chat   bool
 }
 
-func NewOllamaCompletionStream(body io.ReadCloser) *OllamaCompletionStream {
+func NewOllamaCompletionStream(body io.ReadCloser, chat bool) *OllamaCompletionStream {
 	reader := bufio.NewReader(body)
 	s := &OllamaCompletionStream{
 		body:   body,
 		reader: reader,
+		chat:   chat,
 	}
 	return s
 }
@@ -108,13 +135,20 @@ func (s OllamaCompletionStream) Recv() (string, error) {
 		return "", err
 	}
 
-	var response ollamaChatStreamResponse
+	var response ollamaStreamResponse
 	err = json.Unmarshal(line, &response)
 	if err != nil {
 		return "", fmt.Errorf("failed to deserialize chat stream response: %w", err)
 	}
 
-	return response.Message.Content, nil
+	var out string
+	if s.chat {
+		out = response.Message.Content
+	} else {
+		out = response.Response
+	}
+
+	return out, nil
 }
 
 func (s OllamaCompletionStream) Close() error {

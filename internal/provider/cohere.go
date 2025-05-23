@@ -50,13 +50,39 @@ func NewCohereProvider() *CohereProvider {
 	}
 }
 
-func (p CohereProvider) CreateCompletionStream(ctx context.Context, req CompletionRequest) (CompletionStream, error) {
+func (p CohereProvider) Generate(ctx context.Context, req GenerationRequest) (CompletionStream, error) {
+	temp := float64(req.Temperature)
+	cohereReq := &cohere.V2ChatStreamRequest{
+		Model:       "command-r-08-2024",
+		Temperature: &temp,
+	}
+
+	if req.ModelName != "" {
+		cohereReq.Model = req.ModelName
+	}
+
+	cohereReq.Messages = append(cohereReq.Messages, &cohere.ChatMessageV2{
+		Role: "user",
+		User: &cohere.UserMessage{Content: &cohere.UserMessageContent{
+			String: req.Prompt,
+		}},
+	})
+
+	stream, err := p.client.V2.ChatStream(ctx, cohereReq)
+	if err != nil {
+		return nil, fmt.Errorf("chat streaming request failed: %w", err)
+	}
+
+	return &CohereCompletionStream{stream: stream}, nil
+}
+
+func (p CohereProvider) Chat(ctx context.Context, req ChatRequest) (CompletionStream, error) {
 	if req.Query == "" {
 		return nil, fmt.Errorf("completion request failed: missing parameter 'query' in request")
 	}
 
 	cohereReq := &cohere.V2ChatStreamRequest{
-		Model: "command-a-03-2025",
+		Model: "command-r-08-2024",
 	}
 
 	if req.ModelName != "" {

@@ -4,7 +4,7 @@ workflows:
     name: chat_basic
     nodes:
       - module: generation.Simple
-        operator: generate
+        operator: chat
 
       - module: system.Logger
         operator: acc_stream

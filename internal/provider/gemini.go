@@ -44,7 +44,29 @@ func NewGeminiProvider() *GeminiProvider {
 	return p
 }
 
-func (p GeminiProvider) CreateCompletionStream(ctx context.Context, req CompletionRequest) (CompletionStream, error) {
+func (p GeminiProvider) Generate(ctx context.Context, req GenerationRequest) (CompletionStream, error) {
+	config := &genai.GenerateContentConfig{
+		Temperature: &req.Temperature,
+	}
+
+	var modelName string
+	if req.ModelName != "" {
+		modelName = req.ModelName
+	} else {
+		modelName = "gemini-2.0-flash"
+	}
+
+	contents := genai.Text(req.Prompt)
+	i := p.client.Models.GenerateContentStream(ctx, modelName, contents, config)
+
+	next, stop := iter.Pull2(i)
+	return &GeminiCompletionStream{
+		next: next,
+		stop: stop,
+	}, nil
+}
+
+func (p GeminiProvider) Chat(ctx context.Context, req ChatRequest) (CompletionStream, error) {
 	contents := p.parseRequestHistory(req.History)
 	contents = append(contents, genai.NewContentFromText(req.Query, genai.RoleUser))
 

@@ -146,7 +146,7 @@ func (e AugmentedExecutor) generateWithContext(ctx context.Context, p *executor.
 		return nil, err
 	}
 
-	stream, err := e.DefaultLMProvider.CreateCompletionStream(ctx, provider.CompletionRequest{
+	stream, err := e.DefaultLMProvider.Chat(ctx, provider.ChatRequest{
 		Query:        p.GetQuery(),
 		SystemPrompt: parsedPrompt,
 	})

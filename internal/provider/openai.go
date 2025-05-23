@@ -19,7 +19,29 @@ func NewOpenAIProvider() *OpenAIProvider {
 	}
 }
 
-func (p *OpenAIProvider) CreateCompletionStream(ctx context.Context, req CompletionRequest) (CompletionStream, error) {
+func (p OpenAIProvider) Generate(ctx context.Context, req GenerationRequest) (CompletionStream, error) {
+	openaiReq := &openai.CompletionRequest{
+		Prompt:      req.Prompt,
+		Temperature: req.Temperature,
+		Model:       openai.GPT4Dot1Mini,
+	}
+
+	if req.ModelName != "" {
+		openaiReq.Model = req.ModelName
+	}
+
+	s, err := p.client.CreateCompletionStream(ctx, *openaiReq)
+	if err != nil {
+		return nil, err
+	}
+
+	completionStream := &OpenAIGenerationStream{
+		stream: s,
+	}
+	return completionStream, nil
+}
+
+func (p OpenAIProvider) Chat(ctx context.Context, req ChatRequest) (CompletionStream, error) {
 	messages := make([]openai.ChatCompletionMessage, 0)
 
 	if req.SystemPrompt != "" {
@@ -50,13 +72,13 @@ func (p *OpenAIProvider) CreateCompletionStream(ctx context.Context, req Complet
 		return nil, err
 	}
 
-	completionStream := &OpenAICompletionStream{
+	completionStream := &OpenAIChatStream{
 		stream: s,
 	}
 	return completionStream, nil
 }
 
-func (p *OpenAIProvider) parseRequestHistory(h []*message.Chat) []openai.ChatCompletionMessage {
+func (p OpenAIProvider) parseRequestHistory(h []*message.Chat) []openai.ChatCompletionMessage {
 	msgs := make([]openai.ChatCompletionMessage, len(h))
 	for i, m := range h {
 		ccm := openai.ChatCompletionMessage{
@@ -68,11 +90,28 @@ func (p *OpenAIProvider) parseRequestHistory(h []*message.Chat) []openai.ChatCom
 	return msgs
 }
 
-type OpenAICompletionStream struct {
+type OpenAIGenerationStream struct {
+	stream *openai.CompletionStream
+}
+
+func (s OpenAIGenerationStream) Recv() (string, error) {
+	res, err := s.stream.Recv()
+	if err != nil {
+		return "", err
+	}
+
+	return res.Choices[0].Text, nil
+}
+
+func (s OpenAIGenerationStream) Close() error {
+	return s.stream.Close()
+}
+
+type OpenAIChatStream struct {
 	stream *openai.ChatCompletionStream
 }
 
-func (s OpenAICompletionStream) Recv() (string, error) {
+func (s OpenAIChatStream) Recv() (string, error) {
 	res, err := s.stream.Recv()
 	if err != nil {
 		return "", err
@@ -81,6 +120,6 @@ func (s OpenAICompletionStream) Recv() (string, error) {
 	return res.Choices[0].Delta.Content, nil
 }
 
-func (s OpenAICompletionStream) Close() error {
+func (s OpenAIChatStream) Close() error {
 	return s.stream.Close()
 }

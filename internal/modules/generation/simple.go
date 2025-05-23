@@ -16,26 +16,38 @@ import (
 var simpleExecutorDescriptor = "generation.Simple"
 
 func init() {
-	e := NewSimpleExecutor()
-	err := registry.RegisterExecutor(simpleExecutorDescriptor, e)
+	e, err := NewSimpleExecutor()
+	if err != nil {
+		slog.Error("failed to initialize executor", "name", simpleExecutorDescriptor, "err", err)
+		return
+	}
+
+	err = registry.RegisterExecutor(simpleExecutorDescriptor, e)
 	if err != nil {
 		slog.Error("failed to register executor", "name", simpleExecutorDescriptor)
 	}
 }
 
 type SimpleExecutor struct {
-	Provider  provider.LMProviderType
-	operators map[string]func(context.Context, *executor.ExecutorParams) error
+	DefaultLMProvider provider.LMProvider
+	operators         map[string]func(context.Context, *executor.ExecutorParams) error
 }
 
-func NewSimpleExecutor() *SimpleExecutor {
-	e := &SimpleExecutor{
-		Provider: provider.LMProviderTypeGemini,
+func NewSimpleExecutor() (*SimpleExecutor, error) {
+	lp, err := provider.NewLMProvider(provider.LMProviderTypeGemini)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize default providers: %w", err)
 	}
+
+	e := &SimpleExecutor{
+		DefaultLMProvider: lp,
+	}
+
 	e.operators = map[string]func(context.Context, *executor.ExecutorParams) error{
 		"generate": e.generate,
+		"chat":     e.chat,
 	}
-	return e
+	return e, nil
 }
 
 func (e *SimpleExecutor) Execute(ctx context.Context, p *executor.ExecutorParams) *executor.ExecutorResult {
@@ -51,11 +63,10 @@ func (e *SimpleExecutor) Execute(ctx context.Context, p *executor.ExecutorParams
 	}
 
 	err := opFunc(ctx, p)
-	slog.Error("", "error", err)
 	return e.buildResult(p.Operator, err, nil)
 }
 
-func (e *SimpleExecutor) generate(ctx context.Context, p *executor.ExecutorParams) error {
+func (e SimpleExecutor) generate(ctx context.Context, p *executor.ExecutorParams) error {
 	ms, err := p.Transport.GetMessageStream(p.GetTaskID())
 	if err != nil {
 		slog.Warn("failed to create message stream", "id", p.GetTaskID())
@@ -66,14 +77,44 @@ func (e *SimpleExecutor) generate(ctx context.Context, p *executor.ExecutorParam
 		return fmt.Errorf("<empty query>: %w", asynq.SkipRetry)
 	}
 
-	prov, err := provider.NewLMProvider(provider.LMProviderTypeGemini)
+	greq := provider.FromPrompt(p.GetQuery())
+	temperature, err := executor.GetTypedArg[float64](p, "temperature")
 	if err != nil {
-		slog.Warn("error creating new lmprovider, cancelling task")
+		if _, ok := err.(executor.ErrArgMissing); !ok {
+			return err
+		}
+	} else {
+		greq.Temperature = float32(temperature)
+	}
+
+	cs, err := e.DefaultLMProvider.Generate(ctx, *greq)
+	if err != nil {
+		slog.Warn("error creating generation completion stream, cancelling task")
 		ms.Send(ctx, transport.MessageStreamPayload{
 			Content: "something went wrong",
 			Status:  "ERR",
 		})
 		return err
+	}
+	defer cs.Close()
+
+	_, err = transport.ProcessCompletionStream(ctx, ms, cs)
+	if err != nil {
+		return fmt.Errorf("failed to process completion stream: %w", err)
+	}
+
+	return nil
+}
+
+func (e *SimpleExecutor) chat(ctx context.Context, p *executor.ExecutorParams) error {
+	ms, err := p.Transport.GetMessageStream(p.GetTaskID())
+	if err != nil {
+		slog.Warn("failed to create message stream", "id", p.GetTaskID())
+		return err
+	}
+
+	if len(p.GetQuery()) == 0 {
+		return fmt.Errorf("<empty query>: %w", asynq.SkipRetry)
 	}
 
 	var history []*message.Chat
@@ -84,12 +125,14 @@ func (e *SimpleExecutor) generate(ctx context.Context, p *executor.ExecutorParam
 		history = h.([]*message.Chat)
 	}
 
-	creq := provider.CompletionRequest{
+	creq := provider.ChatRequest{
 		Query:   p.GetQuery(),
 		History: history,
 	}
 
-	cs, err := prov.CreateCompletionStream(ctx, creq)
+	slog.Info("chat request", "history", history, "query", creq.Query)
+
+	cs, err := e.DefaultLMProvider.Chat(ctx, creq)
 	if err != nil {
 		slog.Warn("error creating chat completion stream, cancelling task")
 		ms.Send(ctx, transport.MessageStreamPayload{
