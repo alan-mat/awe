@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/alan-mat/awe/internal/api"
 	"github.com/alan-mat/awe/internal/executor"
-	"github.com/alan-mat/awe/internal/message"
 	"github.com/alan-mat/awe/internal/provider"
 	"github.com/alan-mat/awe/internal/registry"
 	"github.com/alan-mat/awe/internal/transport"
@@ -29,12 +29,12 @@ func init() {
 }
 
 type SimpleExecutor struct {
-	DefaultLMProvider provider.LMProvider
+	DefaultLMProvider provider.LM
 	operators         map[string]func(context.Context, *executor.ExecutorParams) error
 }
 
 func NewSimpleExecutor() (*SimpleExecutor, error) {
-	lp, err := provider.NewLMProvider(provider.LMProviderTypeCohere)
+	lp, err := provider.NewLM(provider.LMTypeOpenai)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize default providers: %w", err)
 	}
@@ -77,7 +77,7 @@ func (e SimpleExecutor) generate(ctx context.Context, p *executor.ExecutorParams
 		return fmt.Errorf("<empty query>: %w", asynq.SkipRetry)
 	}
 
-	greq := provider.FromPrompt(p.GetQuery())
+	greq := api.FromPrompt(p.GetQuery())
 	temperature, err := executor.GetTypedArg[float64](p, "temperature")
 	if err != nil {
 		if _, ok := err.(executor.ErrArgMissing); !ok {
@@ -117,15 +117,15 @@ func (e *SimpleExecutor) chat(ctx context.Context, p *executor.ExecutorParams) e
 		return fmt.Errorf("<empty query>: %w", asynq.SkipRetry)
 	}
 
-	var history []*message.Chat
+	var history []*api.ChatMessage
 	h, ok := p.Args["history"]
 	if !ok {
 		history = nil
 	} else {
-		history = h.([]*message.Chat)
+		history = h.([]*api.ChatMessage)
 	}
 
-	creq := provider.ChatRequest{
+	creq := api.ChatRequest{
 		Query:   p.GetQuery(),
 		History: history,
 	}

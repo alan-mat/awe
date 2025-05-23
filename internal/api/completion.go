@@ -1,11 +1,9 @@
-package provider
+package api
 
 import (
 	"context"
 	"errors"
 	"io"
-
-	"github.com/alan-mat/awe/internal/message"
 )
 
 type ChatRequest struct {
@@ -15,7 +13,7 @@ type ChatRequest struct {
 	// Optional params
 	ModelName    string
 	SystemPrompt string
-	History      []*message.Chat
+	History      []*ChatMessage
 }
 
 type GenerationRequest struct {

@@ -1,4 +1,4 @@
-package provider
+package gemini
 
 import (
 	"context"
@@ -7,11 +7,11 @@ import (
 	"iter"
 	"os"
 
-	"github.com/alan-mat/awe/internal/message"
+	"github.com/alan-mat/awe/internal/api"
 	"google.golang.org/genai"
 )
 
-const geminiSegmentPrompt = `You are an expert document chunker, responsible for segmenting complex documents into semantically coherent chunks suitable for indexing in a vector database. Your goal is to create chunks that are informative and useful for semantic search. Follow these guidelines meticulously:
+const segmentPrompt = `You are an expert document chunker, responsible for segmenting complex documents into semantically coherent chunks suitable for indexing in a vector database. Your goal is to create chunks that are informative and useful for semantic search. Follow these guidelines meticulously:
 
 1.  **Semantic Coherence:** Maintain semantic meaning within each chunk. Avoid splitting sentences, paragraphs, or logical units of information across chunk boundaries. Ensure a smooth and natural flow of information within each chunk.
 
@@ -29,7 +29,7 @@ type GeminiProvider struct {
 	vectorDims *int32
 }
 
-func NewGeminiProvider() *GeminiProvider {
+func New() *GeminiProvider {
 	// New methods might need error return
 	// to handle error returns from client libs like genai
 	c, _ := genai.NewClient(context.Background(), &genai.ClientConfig{
@@ -44,7 +44,7 @@ func NewGeminiProvider() *GeminiProvider {
 	return p
 }
 
-func (p GeminiProvider) Generate(ctx context.Context, req GenerationRequest) (CompletionStream, error) {
+func (p GeminiProvider) Generate(ctx context.Context, req api.GenerationRequest) (api.CompletionStream, error) {
 	config := &genai.GenerateContentConfig{
 		Temperature: &req.Temperature,
 	}
@@ -66,7 +66,7 @@ func (p GeminiProvider) Generate(ctx context.Context, req GenerationRequest) (Co
 	}, nil
 }
 
-func (p GeminiProvider) Chat(ctx context.Context, req ChatRequest) (CompletionStream, error) {
+func (p GeminiProvider) Chat(ctx context.Context, req api.ChatRequest) (api.CompletionStream, error) {
 	contents := p.parseRequestHistory(req.History)
 	contents = append(contents, genai.NewContentFromText(req.Query, genai.RoleUser))
 
@@ -106,8 +106,8 @@ func (p GeminiProvider) EmbedQuery(ctx context.Context, q string) ([]float32, er
 	return vals, nil
 }
 
-func (p GeminiProvider) EmbedDocuments(ctx context.Context, docs []*EmbedDocumentRequest) ([]*DocumentEmbedding, error) {
-	embeddings := make([]*DocumentEmbedding, 0, len(docs))
+func (p GeminiProvider) EmbedDocuments(ctx context.Context, docs []*api.EmbedDocumentRequest) ([]*api.DocumentEmbedding, error) {
+	embeddings := make([]*api.DocumentEmbedding, 0, len(docs))
 
 	for _, doc := range docs {
 		contents := make([]*genai.Content, 0, len(doc.Chunks))
@@ -132,7 +132,7 @@ func (p GeminiProvider) EmbedDocuments(ctx context.Context, docs []*EmbedDocumen
 			values = append(values, rEmbedding.Values)
 		}
 
-		docEmbed := &DocumentEmbedding{
+		docEmbed := &api.DocumentEmbedding{
 			Title:  doc.Title,
 			Values: values,
 			Chunks: doc.Chunks,
@@ -147,7 +147,7 @@ func (p GeminiProvider) GetDimensions() uint {
 	return uint(*p.vectorDims)
 }
 
-func (p GeminiProvider) ChunkDocument(ctx context.Context, doc *DocumentContent) ([]string, error) {
+func (p GeminiProvider) ChunkDocument(ctx context.Context, doc *api.DocumentContent) ([]string, error) {
 	content := doc.Text()
 
 	schema := &genai.Schema{
@@ -166,7 +166,7 @@ func (p GeminiProvider) ChunkDocument(ctx context.Context, doc *DocumentContent)
 
 	temperature := float32(0)
 	reqConfig := &genai.GenerateContentConfig{
-		SystemInstruction: genai.NewContentFromText(geminiSegmentPrompt, ""),
+		SystemInstruction: genai.NewContentFromText(segmentPrompt, ""),
 		ResponseMIMEType:  "application/json",
 		ResponseSchema:    schema,
 		Temperature:       &temperature,
@@ -194,11 +194,11 @@ func (p GeminiProvider) ChunkDocument(ctx context.Context, doc *DocumentContent)
 	return respChunks.Chunks, nil
 }
 
-func (p GeminiProvider) parseRequestHistory(h []*message.Chat) []*genai.Content {
+func (p GeminiProvider) parseRequestHistory(h []*api.ChatMessage) []*genai.Content {
 	contents := make([]*genai.Content, len(h))
-	roleTypes := map[message.ChatRole]genai.Role{
-		message.RoleUser:      genai.RoleUser,
-		message.RoleAssistant: genai.RoleModel,
+	roleTypes := map[api.ChatMessageRole]genai.Role{
+		api.RoleUser:      genai.RoleUser,
+		api.RoleAssistant: genai.RoleModel,
 	}
 	for i, m := range h {
 		c := genai.NewContentFromText(m.Content, roleTypes[m.Role])

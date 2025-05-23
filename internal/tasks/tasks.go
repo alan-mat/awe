@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/alan-mat/awe/internal/api"
 	"github.com/alan-mat/awe/internal/executor"
-	"github.com/alan-mat/awe/internal/message"
 	pb "github.com/alan-mat/awe/internal/proto"
 	"github.com/alan-mat/awe/internal/registry"
 	"github.com/alan-mat/awe/internal/transport"
@@ -23,7 +23,7 @@ const (
 type chatTaskPayload struct {
 	Query   string
 	User    string
-	History []*message.Chat
+	History []*api.ChatMessage
 	Args    map[string]string
 }
 
@@ -31,7 +31,7 @@ func NewChatTask(req *pb.ChatRequest) (*asynq.Task, error) {
 	tp := chatTaskPayload{
 		Query:   req.Query,
 		User:    req.User,
-		History: message.ParseChatHistory(req.History),
+		History: api.ParseChatHistory(req.History),
 		Args:    req.Args,
 	}
 	payload, err := json.Marshal(tp)
@@ -63,7 +63,7 @@ func (h *ChatTaskHandler) ProcessTask(ctx context.Context, t *asynq.Task) error 
 	slog.Info("received chat task", "user", p.User, "query", p.Query, "history", p.History)
 	slog.Info("task id", "id", id)
 
-	workflow, _ := registry.GetWorkflow("rag_rr")
+	workflow, _ := registry.GetWorkflow("naive_rag")
 
 	args := make(map[string]any)
 	for k, v := range p.Args {

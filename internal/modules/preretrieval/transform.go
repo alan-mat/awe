@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"text/template"
 
+	"github.com/alan-mat/awe/internal/api"
 	"github.com/alan-mat/awe/internal/executor"
 	"github.com/alan-mat/awe/internal/provider"
 	"github.com/alan-mat/awe/internal/registry"
@@ -38,13 +39,13 @@ func init() {
 }
 
 type TransformExecutor struct {
-	DefaultLMProvider provider.LMProvider
+	DefaultLMProvider provider.LM
 	promptRewrite     *template.Template
 	operators         map[string]func(context.Context, *executor.ExecutorParams) (map[string]any, error)
 }
 
 func NewTransformExecutor() (*TransformExecutor, error) {
-	lp, err := provider.NewLMProvider(provider.LMProviderTypeGemini)
+	lp, err := provider.NewLM(provider.LMTypeGemini)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize default providers: %e", err)
 	}
@@ -103,7 +104,7 @@ func (e TransformExecutor) rewriteSimple(ctx context.Context, p *executor.Execut
 	}
 	parsedPrompt := buf.String()
 
-	req := provider.GenerationRequest{
+	req := api.GenerationRequest{
 		Prompt:      parsedPrompt,
 		Temperature: 0.2,
 	}
@@ -113,7 +114,7 @@ func (e TransformExecutor) rewriteSimple(ctx context.Context, p *executor.Execut
 		return nil, err
 	}
 
-	resp, err := provider.StreamReadAll(ctx, cs)
+	resp, err := api.StreamReadAll(ctx, cs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response stream: %w", err)
 	}

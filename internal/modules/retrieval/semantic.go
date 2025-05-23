@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/alan-mat/awe/internal/api"
 	"github.com/alan-mat/awe/internal/executor"
 	"github.com/alan-mat/awe/internal/provider"
 	"github.com/alan-mat/awe/internal/registry"
@@ -27,12 +28,12 @@ func init() {
 }
 
 type SemanticExecutor struct {
-	DefaultEmbedProvider provider.EmbedProvider
+	DefaultEmbedProvider provider.Embedder
 	operators            map[string]func(context.Context, *executor.ExecutorParams) (map[string]any, error)
 }
 
 func NewSemanticExecutor() (*SemanticExecutor, error) {
-	ep, err := provider.NewEmbedProvider(provider.EmbedProviderTypeJinaAI)
+	ep, err := provider.NewEmbedder(provider.EmbedderTypeJina)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize default providers: %e", err)
 	}
@@ -92,14 +93,14 @@ func (e *SemanticExecutor) denseRetrieval(ctx context.Context, p *executor.Execu
 		return nil, fmt.Errorf("failed to get results for query '%s': %e", p.GetQuery(), err)
 	}
 
-	scoredDocs := make([]*provider.ScoredDocument, 0, len(points))
+	scoredDocs := make([]*api.ScoredDocument, 0, len(points))
 	for _, p := range points {
 		t, ok := p.Payload["text"]
 		if !ok {
 			slog.Warn("malformed retrieved context point: missing 'text' field in payload", "id", p.ID, "payload", p.Payload)
 			continue
 		}
-		scoredDocs = append(scoredDocs, &provider.ScoredDocument{
+		scoredDocs = append(scoredDocs, &api.ScoredDocument{
 			Document: t,
 			Score:    float64(p.Score),
 		})

@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/alan-mat/awe/internal/api"
 	"github.com/alan-mat/awe/internal/executor"
-	"github.com/alan-mat/awe/internal/message"
 	"github.com/alan-mat/awe/internal/registry"
 )
 
@@ -70,7 +70,7 @@ func (e *ReaderExecutor) readDirBase64(ctx context.Context, p *executor.Executor
 		return nil, fmt.Errorf("failed to read directory '%s': %e", dirPath, err)
 	}
 
-	fileContents := make([]*message.FileContent, 0, len(entries))
+	fileContents := make([]*api.FileContent, 0, len(entries))
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -84,7 +84,7 @@ func (e *ReaderExecutor) readDirBase64(ctx context.Context, p *executor.Executor
 		}
 
 		dataBase64 := base64.StdEncoding.EncodeToString(data)
-		fileContents = append(fileContents, &message.FileContent{
+		fileContents = append(fileContents, &api.FileContent{
 			Name:    entry.Name(),
 			Content: dataBase64,
 		})

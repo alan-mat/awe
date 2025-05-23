@@ -1,4 +1,4 @@
-package provider
+package jina
 
 import (
 	"context"
@@ -9,17 +9,18 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/alan-mat/awe/internal/api"
 	"github.com/alan-mat/awe/internal/http"
 	"golang.org/x/sync/errgroup"
 )
 
 const (
-	JinaAIEndpoint              = "https://api.jina.ai"
-	JinaSegmentMaxContentLength = 64000
-	JinaEmbedItemsMaxLength     = 2048
+	Endpoint                = "https://api.jina.ai"
+	SegmentMaxContentLength = 64000
+	EmbedItemsMaxLength     = 2048
 )
 
-type jinaSegmentResponse struct {
+type segmentResponse struct {
 	NumTokens int    `json:"num_tokens"`
 	Tokenizer string `json:"tokenizer"`
 	Usage     struct {
@@ -30,7 +31,7 @@ type jinaSegmentResponse struct {
 	Chunks         []string `json:"chunks"`
 }
 
-type jinaEmbeddingResponse struct {
+type embeddingResponse struct {
 	Model     string `json:"model"`
 	UsageInfo struct {
 		TotalTokens  int `json:"total_tokens"`
@@ -47,9 +48,9 @@ type JinaAIProvider struct {
 	vectorDims uint
 }
 
-func NewJinaAIProvider() *JinaAIProvider {
+func New() *JinaAIProvider {
 	c := http.NewClient(
-		JinaAIEndpoint,
+		Endpoint,
 		http.WithMaxRetries(3),
 		http.WithApiKey(os.Getenv("JINA_API_KEY")),
 	)
@@ -60,10 +61,10 @@ func NewJinaAIProvider() *JinaAIProvider {
 	return p
 }
 
-func (p JinaAIProvider) ChunkDocument(ctx context.Context, doc *DocumentContent) ([]string, error) {
-	contents := p.splitContentLen(JinaSegmentMaxContentLength, doc)
+func (p JinaAIProvider) ChunkDocument(ctx context.Context, doc *api.DocumentContent) ([]string, error) {
+	contents := p.splitContentLen(SegmentMaxContentLength, doc)
 
-	responses := make([]*jinaSegmentResponse, 0, len(contents))
+	responses := make([]*segmentResponse, 0, len(contents))
 
 	var g errgroup.Group
 	for _, c := range contents {
@@ -122,9 +123,9 @@ func (p JinaAIProvider) EmbedQuery(ctx context.Context, q string) ([]float32, er
 	return resp.Data[0].Embedding, nil
 }
 
-func (p JinaAIProvider) EmbedDocuments(ctx context.Context, docs []*EmbedDocumentRequest) ([]*DocumentEmbedding, error) {
-	docs = p.splitDocsReqLen(JinaEmbedItemsMaxLength, docs)
-	embeddings := make([]*DocumentEmbedding, 0, len(docs))
+func (p JinaAIProvider) EmbedDocuments(ctx context.Context, docs []*api.EmbedDocumentRequest) ([]*api.DocumentEmbedding, error) {
+	docs = p.splitDocsReqLen(EmbedItemsMaxLength, docs)
+	embeddings := make([]*api.DocumentEmbedding, 0, len(docs))
 
 	for _, doc := range docs {
 		slog.Info("embedding document", "name", doc.Title, "chunks", len(doc.Chunks))
@@ -149,7 +150,7 @@ func (p JinaAIProvider) EmbedDocuments(ctx context.Context, docs []*EmbedDocumen
 			vals[e.Index] = e.Embedding
 		}
 
-		docEmbedding := &DocumentEmbedding{
+		docEmbedding := &api.DocumentEmbedding{
 			Title:  doc.Title,
 			Chunks: doc.Chunks,
 			Values: vals,
@@ -164,7 +165,7 @@ func (p JinaAIProvider) GetDimensions() uint {
 	return p.vectorDims
 }
 
-func (p JinaAIProvider) requestSegmenter(content string) (*jinaSegmentResponse, error) {
+func (p JinaAIProvider) requestSegmenter(content string) (*segmentResponse, error) {
 	requestData := map[string]any{
 		"return_chunks":    true,
 		"max_chunk_length": 768,
@@ -181,7 +182,7 @@ func (p JinaAIProvider) requestSegmenter(content string) (*jinaSegmentResponse, 
 		return nil, err
 	}
 
-	var segmentResponse jinaSegmentResponse
+	var segmentResponse segmentResponse
 	err = json.Unmarshal(jsonData, &segmentResponse)
 	if err != nil {
 		return nil, err
@@ -190,7 +191,7 @@ func (p JinaAIProvider) requestSegmenter(content string) (*jinaSegmentResponse, 
 	return &segmentResponse, nil
 }
 
-func (p JinaAIProvider) requestEmbedding(input []string) (*jinaEmbeddingResponse, error) {
+func (p JinaAIProvider) requestEmbedding(input []string) (*embeddingResponse, error) {
 	requestData := map[string]any{
 		"input":      input,
 		"model":      "jina-embeddings-v3",
@@ -208,7 +209,7 @@ func (p JinaAIProvider) requestEmbedding(input []string) (*jinaEmbeddingResponse
 		return nil, err
 	}
 
-	var embeddingResponse jinaEmbeddingResponse
+	var embeddingResponse embeddingResponse
 	err = json.Unmarshal(jsonData, &embeddingResponse)
 	if err != nil {
 		return nil, err
@@ -217,7 +218,7 @@ func (p JinaAIProvider) requestEmbedding(input []string) (*jinaEmbeddingResponse
 	return &embeddingResponse, nil
 }
 
-func (p JinaAIProvider) splitContentLen(maxLen int, doc *DocumentContent) []string {
+func (p JinaAIProvider) splitContentLen(maxLen int, doc *api.DocumentContent) []string {
 	cts := make([]string, 0, 1)
 	full := doc.Text()
 
@@ -239,8 +240,8 @@ func (p JinaAIProvider) splitContentLen(maxLen int, doc *DocumentContent) []stri
 	return cts
 }
 
-func (p JinaAIProvider) splitDocsReqLen(maxLen int, docs []*EmbedDocumentRequest) []*EmbedDocumentRequest {
-	newDocs := make([]*EmbedDocumentRequest, 0, len(docs))
+func (p JinaAIProvider) splitDocsReqLen(maxLen int, docs []*api.EmbedDocumentRequest) []*api.EmbedDocumentRequest {
+	newDocs := make([]*api.EmbedDocumentRequest, 0, len(docs))
 
 	for _, doc := range docs {
 		if len(doc.Chunks) < maxLen {
@@ -255,7 +256,7 @@ func (p JinaAIProvider) splitDocsReqLen(maxLen int, docs []*EmbedDocumentRequest
 				end = len(doc.Chunks)
 			}
 
-			newDocs = append(newDocs, &EmbedDocumentRequest{
+			newDocs = append(newDocs, &api.EmbedDocumentRequest{
 				Title:  doc.Title,
 				Chunks: doc.Chunks[start:end],
 			})

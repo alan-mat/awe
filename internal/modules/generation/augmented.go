@@ -9,6 +9,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/alan-mat/awe/internal/api"
 	"github.com/alan-mat/awe/internal/executor"
 	"github.com/alan-mat/awe/internal/provider"
 	"github.com/alan-mat/awe/internal/registry"
@@ -51,8 +52,8 @@ func init() {
 }
 
 type AugmentedExecutor struct {
-	DefaultEmbedProvider provider.EmbedProvider
-	DefaultLMProvider    provider.LMProvider
+	DefaultEmbedProvider provider.Embedder
+	DefaultLMProvider    provider.LM
 
 	operators map[string]func(context.Context, *executor.ExecutorParams) (map[string]any, error)
 
@@ -60,8 +61,8 @@ type AugmentedExecutor struct {
 }
 
 func NewAugmentedExecutor() (*AugmentedExecutor, error) {
-	ep, err := provider.NewEmbedProvider(provider.EmbedProviderTypeJinaAI)
-	lp, err2 := provider.NewLMProvider(provider.LMProviderTypeGemini)
+	ep, err := provider.NewEmbedder(provider.EmbedderTypeJina)
+	lp, err2 := provider.NewLM(provider.LMTypeGemini)
 	joinedErr := errors.Join(err, err2)
 	if joinedErr != nil {
 		return nil, fmt.Errorf("failed to initialize default providers: %w", err)
@@ -113,7 +114,7 @@ func (e AugmentedExecutor) generateWithContext(ctx context.Context, p *executor.
 	// 'gen_context' requires one of the following parameter args:
 	// context_docs - slice of scored documents to be used as context
 	//					(from vector store or after post-retrieval)
-	contextPoints, err := executor.GetTypedArg[[]*provider.ScoredDocument](p, "context_docs")
+	contextPoints, err := executor.GetTypedArg[[]*api.ScoredDocument](p, "context_docs")
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +147,7 @@ func (e AugmentedExecutor) generateWithContext(ctx context.Context, p *executor.
 		return nil, err
 	}
 
-	stream, err := e.DefaultLMProvider.Chat(ctx, provider.ChatRequest{
+	stream, err := e.DefaultLMProvider.Chat(ctx, api.ChatRequest{
 		Query:        p.GetQuery(),
 		SystemPrompt: parsedPrompt,
 	})

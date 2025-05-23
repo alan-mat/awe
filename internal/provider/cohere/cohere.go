@@ -1,4 +1,4 @@
-package provider
+package awe_cohere
 
 import (
 	"context"
@@ -9,24 +9,23 @@ import (
 	"sync"
 	"time"
 
-	"github.com/alan-mat/awe/internal/message"
-
+	"github.com/alan-mat/awe/internal/api"
 	cohere "github.com/cohere-ai/cohere-go/v2"
 	cohereclient "github.com/cohere-ai/cohere-go/v2/client"
 	coherecore "github.com/cohere-ai/cohere-go/v2/core"
 )
 
 const (
-	CohereEmbedMaxTexts = 96
+	EmbedMaxTexts = 96
 )
 
-type cohereEmbedRequestWrapper struct {
+type embedRequestWrapper struct {
 	Title   string
 	Chunks  []string
 	Request *cohere.V2EmbedRequest
 }
 
-type cohereEmbedResponseWrapper struct {
+type embedResponseWrapper struct {
 	Title    string
 	Chunks   []string
 	Response *cohere.EmbedByTypeResponse
@@ -36,7 +35,7 @@ type CohereProvider struct {
 	client *cohereclient.Client
 }
 
-func NewCohereProvider() *CohereProvider {
+func New() *CohereProvider {
 	c := cohereclient.NewClient(
 		cohereclient.WithToken(os.Getenv("COHERE_API_KEY")),
 		cohereclient.WithHTTPClient(
@@ -50,7 +49,7 @@ func NewCohereProvider() *CohereProvider {
 	}
 }
 
-func (p CohereProvider) Generate(ctx context.Context, req GenerationRequest) (CompletionStream, error) {
+func (p CohereProvider) Generate(ctx context.Context, req api.GenerationRequest) (api.CompletionStream, error) {
 	temp := float64(req.Temperature)
 	cohereReq := &cohere.V2ChatStreamRequest{
 		Model:       "command-r-08-2024",
@@ -76,7 +75,7 @@ func (p CohereProvider) Generate(ctx context.Context, req GenerationRequest) (Co
 	return &CohereCompletionStream{stream: stream}, nil
 }
 
-func (p CohereProvider) Chat(ctx context.Context, req ChatRequest) (CompletionStream, error) {
+func (p CohereProvider) Chat(ctx context.Context, req api.ChatRequest) (api.CompletionStream, error) {
 	if req.Query == "" {
 		return nil, fmt.Errorf("completion request failed: missing parameter 'query' in request")
 	}
@@ -140,27 +139,27 @@ func (p CohereProvider) EmbedQuery(ctx context.Context, q string) ([]float32, er
 	return f32, nil
 }
 
-func (p CohereProvider) EmbedDocuments(ctx context.Context, docs []*EmbedDocumentRequest) ([]*DocumentEmbedding, error) {
-	embedRequests := make([]*cohereEmbedRequestWrapper, 0, len(docs))
+func (p CohereProvider) EmbedDocuments(ctx context.Context, docs []*api.EmbedDocumentRequest) ([]*api.DocumentEmbedding, error) {
+	embedRequests := make([]*embedRequestWrapper, 0, len(docs))
 	for _, doc := range docs {
-		if len(doc.Chunks) <= CohereEmbedMaxTexts {
+		if len(doc.Chunks) <= EmbedMaxTexts {
 			req := &cohere.V2EmbedRequest{
 				Texts:          doc.Chunks,
 				Model:          "embed-multilingual-v3.0",
 				InputType:      cohere.EmbedInputTypeSearchDocument,
 				EmbeddingTypes: []cohere.EmbeddingType{cohere.EmbeddingTypeFloat},
 			}
-			embedRequests = append(embedRequests, &cohereEmbedRequestWrapper{
+			embedRequests = append(embedRequests, &embedRequestWrapper{
 				Title:   doc.Title,
 				Chunks:  doc.Chunks,
 				Request: req,
 			})
 		}
 
-		parts := (len(doc.Chunks) / CohereEmbedMaxTexts) + 1
+		parts := (len(doc.Chunks) / EmbedMaxTexts) + 1
 		var start, end int
 		for i := range parts {
-			start, end = i*CohereEmbedMaxTexts, (i+1)*CohereEmbedMaxTexts
+			start, end = i*EmbedMaxTexts, (i+1)*EmbedMaxTexts
 			if end > len(doc.Chunks) {
 				end = len(doc.Chunks)
 			}
@@ -171,7 +170,7 @@ func (p CohereProvider) EmbedDocuments(ctx context.Context, docs []*EmbedDocumen
 				InputType:      cohere.EmbedInputTypeSearchDocument,
 				EmbeddingTypes: []cohere.EmbeddingType{cohere.EmbeddingTypeFloat},
 			}
-			embedRequests = append(embedRequests, &cohereEmbedRequestWrapper{
+			embedRequests = append(embedRequests, &embedRequestWrapper{
 				Title:   doc.Title,
 				Chunks:  doc.Chunks,
 				Request: req,
@@ -181,19 +180,19 @@ func (p CohereProvider) EmbedDocuments(ctx context.Context, docs []*EmbedDocumen
 
 	var wg sync.WaitGroup
 	var embedRespMu sync.Mutex
-	embedResponses := make([]*cohereEmbedResponseWrapper, 0, len(embedRequests))
+	embedResponses := make([]*embedResponseWrapper, 0, len(embedRequests))
 
 	for _, ereq := range embedRequests {
 		wg.Add(1)
 		ctxTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
 		defer cancel()
 
-		go func(ctx context.Context, ereq *cohereEmbedRequestWrapper) {
+		go func(ctx context.Context, ereq *embedRequestWrapper) {
 			defer wg.Done()
 			resp, err := p.client.V2.Embed(ctx, ereq.Request)
 			if err == nil {
 				embedRespMu.Lock()
-				embedResponses = append(embedResponses, &cohereEmbedResponseWrapper{
+				embedResponses = append(embedResponses, &embedResponseWrapper{
 					Title:    ereq.Title,
 					Chunks:   ereq.Chunks,
 					Response: resp,
@@ -204,7 +203,7 @@ func (p CohereProvider) EmbedDocuments(ctx context.Context, docs []*EmbedDocumen
 	}
 	wg.Wait()
 
-	docEmbeddings := make([]*DocumentEmbedding, 0, len(embedResponses))
+	docEmbeddings := make([]*api.DocumentEmbedding, 0, len(embedResponses))
 	for _, eresp := range embedResponses {
 		vectors := make([][]float32, 0, len(eresp.Response.Embeddings.Float))
 		for _, cohereVector := range eresp.Response.Embeddings.Float {
@@ -214,7 +213,7 @@ func (p CohereProvider) EmbedDocuments(ctx context.Context, docs []*EmbedDocumen
 			}
 			vectors = append(vectors, vector)
 		}
-		docEmbeddings = append(docEmbeddings, &DocumentEmbedding{
+		docEmbeddings = append(docEmbeddings, &api.DocumentEmbedding{
 			Title:  eresp.Title,
 			Chunks: eresp.Chunks,
 			Values: vectors,
@@ -228,7 +227,7 @@ func (p CohereProvider) GetDimensions() uint {
 	return 1024
 }
 
-func (p CohereProvider) Rerank(ctx context.Context, req RerankRequest) (*RerankResponse, error) {
+func (p CohereProvider) Rerank(ctx context.Context, req api.RerankRequest) (*api.RerankResponse, error) {
 	if req.Query == "" {
 		return nil, fmt.Errorf("rerank request failed: missing parameter 'query' in request")
 	}
@@ -258,36 +257,36 @@ func (p CohereProvider) Rerank(ctx context.Context, req RerankRequest) (*RerankR
 		return nil, fmt.Errorf("rerank request failed: %w", err)
 	}
 
-	scoredDocs := make([]*ScoredDocument, 0, len(resp.Results))
+	scoredDocs := make([]*api.ScoredDocument, 0, len(resp.Results))
 	for _, result := range resp.Results {
-		if result.RelevanceScore >= RerankScoreThreshold {
-			scoredDocs = append(scoredDocs, &ScoredDocument{
+		if result.RelevanceScore >= api.RerankScoreThreshold {
+			scoredDocs = append(scoredDocs, &api.ScoredDocument{
 				Document: result.Document.Text,
 				Score:    result.RelevanceScore,
 			})
 		}
 	}
 
-	return &RerankResponse{
+	return &api.RerankResponse{
 		Query:     req.Query,
 		Documents: scoredDocs,
 		ModelName: coReq.Model,
 	}, nil
 }
 
-func (p CohereProvider) parseRequestHistory(h []*message.Chat) cohere.ChatMessages {
+func (p CohereProvider) parseRequestHistory(h []*api.ChatMessage) cohere.ChatMessages {
 	messages := make([]*cohere.ChatMessageV2, 0, len(h))
 	for _, chatMsg := range h {
 		var coMsg *cohere.ChatMessageV2
 		switch chatMsg.Role {
-		case message.RoleUser:
+		case api.RoleUser:
 			coMsg = &cohere.ChatMessageV2{
 				Role: "user",
 				User: &cohere.UserMessage{Content: &cohere.UserMessageContent{
 					String: chatMsg.Content,
 				}},
 			}
-		case message.RoleAssistant:
+		case api.RoleAssistant:
 			coMsg = &cohere.ChatMessageV2{
 				Role: "assistant",
 				Assistant: &cohere.AssistantMessage{Content: &cohere.AssistantMessageContent{

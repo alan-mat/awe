@@ -1,4 +1,4 @@
-package message
+package api
 
 // FileContent contains the name of a file and
 // its base64 encoded contents.

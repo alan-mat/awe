@@ -1,4 +1,4 @@
-package provider
+package api
 
 type EmbedDocumentRequest struct {
 	Title  string

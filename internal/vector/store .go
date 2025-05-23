@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/alan-mat/awe/internal/provider"
+	"github.com/alan-mat/awe/internal/api"
 	"github.com/google/uuid"
 )
 
@@ -68,7 +68,7 @@ type Point struct {
 	Payload map[string]any
 }
 
-func CreatePoints(docs []*provider.DocumentEmbedding) []*Point {
+func CreatePoints(docs []*api.DocumentEmbedding) []*Point {
 	points := make([]*Point, 0, len(docs))
 	for _, doc := range docs {
 		for i := range len(doc.Chunks) {

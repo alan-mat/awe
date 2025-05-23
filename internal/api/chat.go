@@ -1,39 +1,39 @@
-package message
+package api
 
 import (
 	pb "github.com/alan-mat/awe/internal/proto"
 )
 
-type ChatRole int
+type ChatMessageRole int
 
 const (
-	RoleUser ChatRole = iota
+	RoleUser ChatMessageRole = iota
 	RoleAssistant
 )
 
-var roleName = map[ChatRole]string{
+var roleName = map[ChatMessageRole]string{
 	RoleUser:      "user",
 	RoleAssistant: "assistant",
 }
 
-func (r ChatRole) String() string {
+func (r ChatMessageRole) String() string {
 	return roleName[r]
 }
 
-type Chat struct {
-	Role    ChatRole
+type ChatMessage struct {
+	Role    ChatMessageRole
 	Content string
 }
 
-func ParseChatHistory(h []*pb.ChatMessage) []*Chat {
-	msgs := make([]*Chat, len(h))
-	typesMap := map[pb.ChatRole]ChatRole{
+func ParseChatHistory(h []*pb.ChatMessage) []*ChatMessage {
+	msgs := make([]*ChatMessage, len(h))
+	typesMap := map[pb.ChatRole]ChatMessageRole{
 		pb.ChatRole_UNSPECIFIED: RoleUser,
 		pb.ChatRole_USER:        RoleUser,
 		pb.ChatRole_ASSISTANT:   RoleAssistant,
 	}
 	for i, m := range h {
-		chatmsg := &Chat{
+		chatmsg := &ChatMessage{
 			Role:    typesMap[m.GetRole()],
 			Content: m.GetContent(),
 		}

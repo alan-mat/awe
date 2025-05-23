@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math"
 
+	"github.com/alan-mat/awe/internal/api"
 	"github.com/alan-mat/awe/internal/executor"
 	"github.com/alan-mat/awe/internal/provider"
 	"github.com/alan-mat/awe/internal/registry"
@@ -109,7 +110,7 @@ func (e RerankExecutor) cohereRerank(ctx context.Context, p *executor.ExecutorPa
 		}
 	}
 
-	rerankRequest := &provider.RerankRequest{
+	rerankRequest := &api.RerankRequest{
 		Query:     p.GetQuery(),
 		Documents: texts,
 	}

@@ -3,6 +3,14 @@ package provider
 import (
 	"context"
 	"errors"
+
+	"github.com/alan-mat/awe/internal/api"
+	cohere "github.com/alan-mat/awe/internal/provider/cohere"
+	"github.com/alan-mat/awe/internal/provider/gemini"
+	"github.com/alan-mat/awe/internal/provider/jina"
+	"github.com/alan-mat/awe/internal/provider/mistral"
+	"github.com/alan-mat/awe/internal/provider/ollama"
+	"github.com/alan-mat/awe/internal/provider/openai"
 )
 
 var (
@@ -10,114 +18,114 @@ var (
 )
 
 const (
-	LMProviderTypeOpenAI = iota
-	LMProviderTypeGemini
-	LMProviderTypeCohere
-	LMProviderTypeOllama
+	LMTypeOpenai = iota
+	LMTypeGemini
+	LMTypeCohere
+	LMTypeOllama
 )
 
 const (
-	EmbedProviderTypeGemini = iota
-	EmbedProviderTypeJinaAI
-	EmbedProviderTypeCohere
+	EmbedderTypeGemini = iota
+	EmbedderTypeJina
+	EmbedderTypeCohere
 )
 
 const (
-	DocumentParseProviderTypeMistral = iota
+	DocParserTypeMistral = iota
 )
 
 const (
-	DocumentSegmentProviderTypeJinaAI = iota
-	DocumentSegmentProviderTypeGemini
+	SegmenterTypeJina = iota
+	SegmenterTypeGemini
 )
 
 const (
 	RerankerTypeCohere = iota
 )
 
-type LMProviderType int
-type EmbedProviderType int
-type DocumentParseProviderType int
-type DocumentSegmentProviderType int
+type LMType int
+type EmbedderType int
+type DocParserType int
+type SegmenterType int
 
 type RerankerType int
 
-type LMProvider interface {
-	Generate(ctx context.Context, req GenerationRequest) (CompletionStream, error)
-	Chat(ctx context.Context, req ChatRequest) (CompletionStream, error)
+type LM interface {
+	Generate(ctx context.Context, req api.GenerationRequest) (api.CompletionStream, error)
+	Chat(ctx context.Context, req api.ChatRequest) (api.CompletionStream, error)
 }
 
-func NewLMProvider(t LMProviderType) (LMProvider, error) {
+func NewLM(t LMType) (LM, error) {
 	switch t {
-	case LMProviderTypeOpenAI:
-		return NewOpenAIProvider(), nil
-	case LMProviderTypeGemini:
-		return NewGeminiProvider(), nil
-	case LMProviderTypeCohere:
-		return NewCohereProvider(), nil
-	case LMProviderTypeOllama:
-		return NewOllamaProvider(), nil
+	case LMTypeOpenai:
+		return openai.New(), nil
+	case LMTypeGemini:
+		return gemini.New(), nil
+	case LMTypeCohere:
+		return cohere.New(), nil
+	case LMTypeOllama:
+		return ollama.New(), nil
 	default:
 		return nil, ErrInvalidProviderType
 	}
 }
 
-type EmbedProvider interface {
+type Embedder interface {
 	EmbedQuery(ctx context.Context, q string) ([]float32, error)
-	EmbedDocuments(ctx context.Context, docs []*EmbedDocumentRequest) ([]*DocumentEmbedding, error)
+	EmbedDocuments(ctx context.Context, docs []*api.EmbedDocumentRequest) ([]*api.DocumentEmbedding, error)
 
 	GetDimensions() uint
 }
 
-func NewEmbedProvider(t EmbedProviderType) (EmbedProvider, error) {
+func NewEmbedder(t EmbedderType) (Embedder, error) {
 	switch t {
-	case EmbedProviderTypeGemini:
-		return NewGeminiProvider(), nil
-	case EmbedProviderTypeJinaAI:
-		return NewJinaAIProvider(), nil
-	case EmbedProviderTypeCohere:
-		return NewCohereProvider(), nil
+	case EmbedderTypeGemini:
+		return gemini.New(), nil
+	case EmbedderTypeJina:
+		return jina.New(), nil
+	case EmbedderTypeCohere:
+		return cohere.New(), nil
 	default:
 		return nil, ErrInvalidProviderType
 	}
 }
 
-type DocumentParseProvider interface {
-	Parse(ctx context.Context, base64file string) (*DocumentContent, error)
+type DocParser interface {
+	Parse(ctx context.Context, base64file string) (*api.DocumentContent, error)
 }
 
-func NewDocumentParseProvider(t DocumentParseProviderType) (DocumentParseProvider, error) {
+func NewDocParser(t DocParserType) (DocParser, error) {
 	switch t {
-	case DocumentParseProviderTypeMistral:
-		return NewMistralProvider(), nil
+	case DocParserTypeMistral:
+		return mistral.New(), nil
 	default:
 		return nil, ErrInvalidProviderType
 	}
 }
 
-type DocumentSegmentProvider interface {
-	ChunkDocument(ctx context.Context, doc *DocumentContent) ([]string, error)
+type Segmenter interface {
+	ChunkDocument(ctx context.Context, doc *api.DocumentContent) ([]string, error)
 }
 
-func NewDocumentSegmentProvider(t DocumentSegmentProviderType) (DocumentSegmentProvider, error) {
+func NewSegmenter(t SegmenterType) (Segmenter, error) {
 	switch t {
-	case DocumentSegmentProviderTypeJinaAI:
-		return NewJinaAIProvider(), nil
-	case DocumentSegmentProviderTypeGemini:
-		return NewGeminiProvider(), nil
+	case SegmenterTypeJina:
+		return jina.New(), nil
+	case SegmenterTypeGemini:
+		return gemini.New(), nil
 	default:
 		return nil, ErrInvalidProviderType
 	}
 }
 
 type Reranker interface {
-	Rerank(ctx context.Context, req RerankRequest) (*RerankResponse, error)
+	Rerank(ctx context.Context, req api.RerankRequest) (*api.RerankResponse, error)
 }
 
 func NewReranker(t RerankerType) (Reranker, error) {
 	switch t {
 	case RerankerTypeCohere:
-		return NewCohereProvider(), nil
+		return cohere.New(), nil
 	default:
 		return nil, ErrInvalidProviderType
 	}

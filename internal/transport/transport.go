@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/alan-mat/awe/internal/provider"
+	"github.com/alan-mat/awe/internal/api"
 )
 
 type Transport interface {
@@ -27,7 +27,7 @@ type MessageStreamPayload struct {
 	Status  string `json:"status"`
 }
 
-func ProcessCompletionStream(ctx context.Context, ms MessageStream, cs provider.CompletionStream) (string, error) {
+func ProcessCompletionStream(ctx context.Context, ms MessageStream, cs api.CompletionStream) (string, error) {
 	var acc, sink string
 	msgId := 0
 

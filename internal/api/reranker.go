@@ -1,4 +1,4 @@
-package provider
+package api
 
 const RerankScoreThreshold = 0.5
 

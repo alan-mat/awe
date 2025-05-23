@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alan-mat/awe/internal/api"
 	"github.com/alan-mat/awe/internal/executor"
-	"github.com/alan-mat/awe/internal/message"
 	"github.com/alan-mat/awe/internal/provider"
 	"github.com/alan-mat/awe/internal/registry"
 	"github.com/alan-mat/awe/internal/vector"
@@ -31,16 +31,16 @@ func init() {
 }
 
 type SimpleExecutor struct {
-	DefaultParseProvider   provider.DocumentParseProvider
-	DefaultSegmentProvider provider.DocumentSegmentProvider
-	DefaultEmbedProvider   provider.EmbedProvider
+	DefaultParseProvider   provider.DocParser
+	DefaultSegmentProvider provider.Segmenter
+	DefaultEmbedProvider   provider.Embedder
 	operators              map[string]func(context.Context, *executor.ExecutorParams) (map[string]any, error)
 }
 
 func NewSimpleExecutor() (*SimpleExecutor, error) {
-	pp, err1 := provider.NewDocumentParseProvider(provider.DocumentParseProviderTypeMistral)
-	sp, err2 := provider.NewDocumentSegmentProvider(provider.DocumentSegmentProviderTypeJinaAI)
-	ep, err3 := provider.NewEmbedProvider(provider.EmbedProviderTypeJinaAI)
+	pp, err1 := provider.NewDocParser(provider.DocParserTypeMistral)
+	sp, err2 := provider.NewSegmenter(provider.SegmenterTypeJina)
+	ep, err3 := provider.NewEmbedder(provider.EmbedderTypeJina)
 	joinedErr := errors.Join(err1, err2, err3)
 	if joinedErr != nil {
 		return nil, fmt.Errorf("failed to initialize default providers: %e", joinedErr)
@@ -86,7 +86,7 @@ func (e SimpleExecutor) indexFilesBase64(ctx context.Context, p *executor.Execut
 		return nil, err
 	}
 
-	files, ok := fcArg.([]*message.FileContent)
+	files, ok := fcArg.([]*api.FileContent)
 	if !ok {
 		return nil, fmt.Errorf("argument 'file_contents' must be of type '[]*message.FileContent'")
 	}
@@ -122,20 +122,20 @@ func (e SimpleExecutor) indexFilesBase64(ctx context.Context, p *executor.Execut
 
 	var wg sync.WaitGroup
 	var docReqMu sync.Mutex
-	docRequests := make([]*provider.EmbedDocumentRequest, 0, len(files))
+	docRequests := make([]*api.EmbedDocumentRequest, 0, len(files))
 
 	for _, file := range files {
 		wg.Add(1)
 		ctxTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
 		defer cancel()
 
-		go func(ctx context.Context, file *message.FileContent) {
+		go func(ctx context.Context, file *api.FileContent) {
 			defer wg.Done()
 
 			chunks := e.parseAndSegmentFile(ctx, file)
 			if len(chunks) > 0 {
 				docReqMu.Lock()
-				docRequests = append(docRequests, &provider.EmbedDocumentRequest{
+				docRequests = append(docRequests, &api.EmbedDocumentRequest{
 					Title:  file.Name,
 					Chunks: chunks,
 				})
@@ -167,7 +167,7 @@ func (e SimpleExecutor) indexFilesBase64(ctx context.Context, p *executor.Execut
 	}, nil
 }
 
-func (e SimpleExecutor) parseAndSegmentFile(ctx context.Context, file *message.FileContent) []string {
+func (e SimpleExecutor) parseAndSegmentFile(ctx context.Context, file *api.FileContent) []string {
 	parsed, err := e.DefaultParseProvider.Parse(ctx, file.Content)
 	if err != nil {
 		slog.Error("failed to parse file, skipping...", "name", file.Name, "err", err)

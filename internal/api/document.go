@@ -1,4 +1,4 @@
-package provider
+package api
 
 type DocumentPage struct {
 	Index int

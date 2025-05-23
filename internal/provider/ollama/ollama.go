@@ -1,4 +1,4 @@
-package provider
+package ollama
 
 import (
 	"bufio"
@@ -7,11 +7,12 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/alan-mat/awe/internal/api"
 	"github.com/alan-mat/awe/internal/http"
 )
 
 const (
-	OllamaEndpoint = "http://localhost:11434"
+	Endpoint = "http://localhost:11434"
 )
 
 type OllamaProvider struct {
@@ -19,22 +20,22 @@ type OllamaProvider struct {
 	defaultModel string
 }
 
-type ollamaChatMessage struct {
+type chatMsgPayload struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
 
-type ollamaStreamResponse struct {
-	Model     string            `json:"model"`
-	CreatedAt string            `json:"created_at"`
-	Message   ollamaChatMessage `json:"message"`
-	Response  string            `json:"response"`
-	Done      bool              `json:"done"`
+type streamResponse struct {
+	Model     string         `json:"model"`
+	CreatedAt string         `json:"created_at"`
+	Message   chatMsgPayload `json:"message"`
+	Response  string         `json:"response"`
+	Done      bool           `json:"done"`
 }
 
-func NewOllamaProvider() *OllamaProvider {
+func New() *OllamaProvider {
 	c := http.NewClient(
-		OllamaEndpoint,
+		Endpoint,
 		http.WithMaxRetries(3),
 	)
 	p := &OllamaProvider{
@@ -44,7 +45,7 @@ func NewOllamaProvider() *OllamaProvider {
 	return p
 }
 
-func (p OllamaProvider) Generate(ctx context.Context, req GenerationRequest) (CompletionStream, error) {
+func (p OllamaProvider) Generate(ctx context.Context, req api.GenerationRequest) (api.CompletionStream, error) {
 	var model string
 	if req.ModelName != "" {
 		model = req.ModelName
@@ -68,7 +69,7 @@ func (p OllamaProvider) Generate(ctx context.Context, req GenerationRequest) (Co
 	return NewOllamaCompletionStream(respBody, false), nil
 }
 
-func (p OllamaProvider) Chat(ctx context.Context, req ChatRequest) (CompletionStream, error) {
+func (p OllamaProvider) Chat(ctx context.Context, req api.ChatRequest) (api.CompletionStream, error) {
 	if req.Query == "" {
 		return nil, fmt.Errorf("completion request failed: missing parameter 'query' in request")
 	}
@@ -80,22 +81,22 @@ func (p OllamaProvider) Chat(ctx context.Context, req ChatRequest) (CompletionSt
 		model = p.defaultModel
 	}
 
-	messages := make([]ollamaChatMessage, 0, 1)
+	messages := make([]chatMsgPayload, 0, 1)
 	if req.SystemPrompt != "" {
-		messages = append(messages, ollamaChatMessage{
+		messages = append(messages, chatMsgPayload{
 			Role:    "system",
 			Content: req.SystemPrompt,
 		})
 	}
 
 	for _, cm := range req.History {
-		messages = append(messages, ollamaChatMessage{
+		messages = append(messages, chatMsgPayload{
 			Role:    cm.Role.String(),
 			Content: cm.Content,
 		})
 	}
 
-	messages = append(messages, ollamaChatMessage{
+	messages = append(messages, chatMsgPayload{
 		Role:    "user",
 		Content: req.Query,
 	})
@@ -135,7 +136,7 @@ func (s OllamaCompletionStream) Recv() (string, error) {
 		return "", err
 	}
 
-	var response ollamaStreamResponse
+	var response streamResponse
 	err = json.Unmarshal(line, &response)
 	if err != nil {
 		return "", fmt.Errorf("failed to deserialize chat stream response: %w", err)

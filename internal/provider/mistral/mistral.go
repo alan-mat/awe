@@ -1,4 +1,4 @@
-package provider
+package mistral
 
 import (
 	"context"
@@ -6,38 +6,39 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/alan-mat/awe/internal/api"
 	"github.com/alan-mat/awe/internal/http"
 )
 
 const (
-	MistralEndpoint = "https://api.mistral.ai"
+	Endpoint = "https://api.mistral.ai"
 )
 
-type mistralPage struct {
+type page struct {
 	Index      int              `json:"index"`
 	Markdown   string           `json:"markdown"`
 	Images     []map[string]any `json:"images"`
 	Dimensions map[string]any   `json:"dimensions"`
 }
 
-type mistralUsageInfo struct {
+type usageInfo struct {
 	PagesProcessed int `json:"pages_processed"`
 	DocSizeBytes   int `json:"doc_size_bytes"`
 }
 
-type MistralOCRResponse struct {
-	Pages     []mistralPage    `json:"pages"`
-	Model     string           `json:"model"`
-	UsageInfo mistralUsageInfo `json:"usage_info"`
+type OCRResponse struct {
+	Pages     []page    `json:"pages"`
+	Model     string    `json:"model"`
+	UsageInfo usageInfo `json:"usage_info"`
 }
 
 type MistralProvider struct {
 	client http.Client
 }
 
-func NewMistralProvider() *MistralProvider {
+func New() *MistralProvider {
 	c := http.NewClient(
-		MistralEndpoint,
+		Endpoint,
 		http.WithMaxRetries(3),
 		http.WithApiKey(os.Getenv("MISTRAL_API_KEY")),
 	)
@@ -47,7 +48,7 @@ func NewMistralProvider() *MistralProvider {
 	return p
 }
 
-func (p MistralProvider) Parse(ctx context.Context, base64file string) (*DocumentContent, error) {
+func (p MistralProvider) Parse(ctx context.Context, base64file string) (*api.DocumentContent, error) {
 	documentUrl := map[string]any{
 		"type":         "document_url",
 		"document_url": fmt.Sprintf("data:application/pdf;base64,%s", base64file),
@@ -68,17 +69,17 @@ func (p MistralProvider) Parse(ctx context.Context, base64file string) (*Documen
 		return nil, err
 	}
 
-	var ocrResponse MistralOCRResponse
+	var ocrResponse OCRResponse
 	err = json.Unmarshal(jsonData, &ocrResponse)
 	if err != nil {
 		return nil, err
 	}
 
-	doc := &DocumentContent{
-		Pages: make([]DocumentPage, 0, len(ocrResponse.Pages)),
+	doc := &api.DocumentContent{
+		Pages: make([]api.DocumentPage, 0, len(ocrResponse.Pages)),
 	}
 	for _, page := range ocrResponse.Pages {
-		dp := DocumentPage{
+		dp := api.DocumentPage{
 			Index: page.Index,
 			Text:  page.Markdown,
 		}
