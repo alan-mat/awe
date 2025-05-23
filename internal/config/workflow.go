@@ -12,7 +12,7 @@ type WorkflowNodeType string
 
 type WorkflowNode struct {
 	Module   string           `yaml:"module"`
-	Operator string           `yaml:"op"`
+	Operator string           `yaml:"operator"`
 	Type     WorkflowNodeType `yaml:"type"`
 	Args     map[string]any   `yaml:"args"`
 }

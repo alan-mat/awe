@@ -56,7 +56,7 @@ func (w *Workflow) Execute(ctx context.Context, params *ExecutorParams) *Executo
 		params.Operator = node.operator
 		maps.Copy(params.Args, node.args)
 
-		slog.Info("executing node", "executor", node.executor, "op", node.operator, "args", node.args)
+		slog.Info("executing node", "executor", node.executor, "op", node.operator, "args", params.Args)
 
 		result := node.executor.Execute(ctx, params)
 		slog.Debug(fmt.Sprintf("%v\n", result))
