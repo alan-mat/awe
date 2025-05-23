@@ -261,8 +261,8 @@ func (p CohereProvider) Rerank(ctx context.Context, req api.RerankRequest) (*api
 	for _, result := range resp.Results {
 		if result.RelevanceScore >= api.RerankScoreThreshold {
 			scoredDocs = append(scoredDocs, &api.ScoredDocument{
-				Document: result.Document.Text,
-				Score:    result.RelevanceScore,
+				Content: result.Document.Text,
+				Score:   result.RelevanceScore,
 			})
 		}
 	}

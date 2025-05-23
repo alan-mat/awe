@@ -63,7 +63,7 @@ func (h *ChatTaskHandler) ProcessTask(ctx context.Context, t *asynq.Task) error 
 	slog.Info("received chat task", "user", p.User, "query", p.Query, "history", p.History)
 	slog.Info("task id", "id", id)
 
-	workflow, _ := registry.GetWorkflow("rag_rr")
+	workflow, _ := registry.GetWorkflow("rag_ws")
 
 	args := make(map[string]any)
 	for k, v := range p.Args {

@@ -92,6 +92,20 @@ func (p ExecutorParams) WithQuery(q string) *ExecutorParams {
 	return newParams
 }
 
+func (p ExecutorParams) Copy() *ExecutorParams {
+	newArgs := make(map[string]any)
+	maps.Copy(newArgs, p.Args)
+
+	return &ExecutorParams{
+		query:       p.query,
+		taskID:      p.taskID,
+		Operator:    p.Operator,
+		Transport:   p.Transport,
+		VectorStore: p.VectorStore,
+		Args:        newArgs,
+	}
+}
+
 func (p ExecutorParams) GetArg(argName string) (any, error) {
 	arg, ok := p.Args[argName]
 	if !ok {

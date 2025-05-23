@@ -11,6 +11,7 @@ import (
 	"github.com/alan-mat/awe/internal/provider/mistral"
 	"github.com/alan-mat/awe/internal/provider/ollama"
 	"github.com/alan-mat/awe/internal/provider/openai"
+	"github.com/alan-mat/awe/internal/provider/tavily"
 )
 
 var (
@@ -44,12 +45,16 @@ const (
 	RerankerTypeCohere = iota
 )
 
+const (
+	WebSearcherTypeTavily = iota
+)
+
 type LMType int
 type EmbedderType int
 type DocParserType int
 type SegmenterType int
-
 type RerankerType int
+type WebSearcherType int
 
 type LM interface {
 	Generate(ctx context.Context, req api.GenerationRequest) (api.CompletionStream, error)
@@ -129,6 +134,19 @@ func NewReranker(t RerankerType) (Reranker, error) {
 	switch t {
 	case RerankerTypeCohere:
 		return cohere.New(), nil
+	default:
+		return nil, ErrInvalidProviderType
+	}
+}
+
+type WebSearcher interface {
+	Search(ctx context.Context, req api.WebSearchRequest) (*api.WebSearchResponse, error)
+}
+
+func NewWebSearcher(t WebSearcherType) (WebSearcher, error) {
+	switch t {
+	case WebSearcherTypeTavily:
+		return tavily.New(), nil
 	default:
 		return nil, ErrInvalidProviderType
 	}

@@ -4,7 +4,7 @@ workflows:
     name: chat_basic
     nodes:
       - module: generation.Simple
-        operator: generate
+        operator: chat
 
       - module: system.Logger
         operator: acc_stream
@@ -21,19 +21,24 @@ workflows:
 
   naive_rag:
     name: naive_rag
-    collection: awe_index
+    collection: hotpot
     nodes:
       - module: retrieval.Semantic
+        args:
+          top_n: 10
+
       - module: generation.Augmented
       - module: system.Logger
 
   rag_rr:
     name: rag_rr
-    collection: awe_new
+    collection: hotpot
     nodes:
-      - module: pre.QueryTransform
+      #- module: pre.QueryTransform
 
       - module: retrieval.Semantic
+        args:
+          top_n: 15
 
       - module: post.Rerank
         args:
@@ -41,4 +46,19 @@ workflows:
 
       - module: generation.Augmented
 
+      - module: system.Logger
+
+  rag_ws:
+    name: rag_ws
+    collection: hotpot
+    nodes:
+      - module: pre.QueryTransform
+      - module: retrieval.Web
+        operator: search
+        args:
+          top_n: 10
+      - module: post.Rerank
+        args:
+          top_n: 5
+      - module: generation.Augmented
       - module: system.Logger
