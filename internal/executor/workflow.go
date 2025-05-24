@@ -2,6 +2,7 @@ package executor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -60,14 +61,15 @@ func NewWorkflow(identifier string, description string, collectionName string, n
 	return workflow
 }
 
-func (w *Workflow) Execute(ctx context.Context, params *ExecutorParams) *ExecutorResult {
-	nodeIdx := 0
+func (w Workflow) Execute(ctx context.Context, params *ExecutorParams) *ExecutorResult {
 	params.Args["collection_name"] = w.collectionName
+	nodes := w.nodes
+	nodeIdx := 0
 
 	slog.Info("executing workflow", "workflowId", w.identifier, "params", params)
 
 	for {
-		node := w.nodes[nodeIdx]
+		node := nodes[nodeIdx]
 		nodeParams := MakeNodeParams(node, params)
 
 		result := node.Executor.Execute(ctx, nodeParams)
@@ -78,8 +80,42 @@ func (w *Workflow) Execute(ctx context.Context, params *ExecutorParams) *Executo
 			return result
 		}
 
+		if node.NodeType == "conditional" {
+			// conditional nodes MUST return a route_key
+			if routeKey, ok := result.Values["route_key"].(string); ok {
+				// set nodes to route nodes
+				// and reset nodeIdx
+				var nextRoute *WorkflowRoute
+				for _, r := range node.Routes {
+					if r.Key == routeKey {
+						nextRoute = r
+						break
+					}
+				}
+
+				if nextRoute == nil {
+					// invalid route key
+					slog.Error("failed to execute workflow: no route found for given key")
+					return &ExecutorResult{
+						Name: w.identifier,
+						Err:  errors.New("failed to execute workflow: no route found for given key"),
+					}
+				}
+
+				nodes = nextRoute.Nodes
+				nodeIdx = 0
+				continue
+			} else {
+				slog.Error("failed to execute workflow: conditional type node did not return a route key")
+				return &ExecutorResult{
+					Name: w.identifier,
+					Err:  errors.New("failed to execute workflow: conditional type node did not return a route key"),
+				}
+			}
+		}
+
 		nodeIdx++
-		if nodeIdx >= len(w.nodes) {
+		if nodeIdx >= len(nodes) {
 			break
 		}
 

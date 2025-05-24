@@ -64,8 +64,8 @@ workflows:
       - module: generation.Augmented
       - module: system.Logger
 
-  test:
-    name: test
+  iter:
+    name: iter
     collection: hotpot
     nodes:
 
@@ -84,4 +84,25 @@ workflows:
               top_n: 10
 
       - module: generation.Augmented
+      - module: system.Logger
+
+  qrouter:
+    name: qrouter
+    collection: hotpot
+    nodes:
+      - module: orchestration.QueryRoute
+        type: conditional
+        routes:
+          - key: base
+            description: Simple queries that do not require any external knowledge and can be directly answered using an LLM's intrinsic knowledge.
+            nodes:
+              - module: generation.Simple
+                operator: chat
+          
+          - key: web_search
+            description: Complex queries that to be answered, require exact information from a web search. 
+            nodes:
+              - module: retrieval.Web
+              - module: generation.Augmented
+
       - module: system.Logger
