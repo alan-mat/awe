@@ -53,6 +53,7 @@ workflows:
     collection: hotpot
     nodes:
       - module: pre.QueryTransform
+
       - module: retrieval.Web
         operator: search
         args:
@@ -60,5 +61,27 @@ workflows:
       - module: post.Rerank
         args:
           top_n: 5
+      - module: generation.Augmented
+      - module: system.Logger
+
+  test:
+    name: test
+    collection: hotpot
+    nodes:
+
+      - module: orchestration.Iterate
+        type: loop
+        args:
+          num_iters: 3
+
+        nodes:
+          - module: pre.QueryTransform
+          - module: retrieval.Web
+            args:
+              top_n: 20
+          - module: post.Rerank
+            args:
+              top_n: 10
+
       - module: generation.Augmented
       - module: system.Logger
