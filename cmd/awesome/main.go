@@ -95,7 +95,7 @@ Type a message and press Enter to send.`)
 }
 
 func sendChatMessage(m model, q string) tea.Cmd {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 
 	req := &pb.ChatRequest{
 		User:    "tui-client",

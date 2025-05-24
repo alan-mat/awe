@@ -121,7 +121,7 @@ func (e AugmentedExecutor) generateWithContext(ctx context.Context, p *executor.
 
 	modelContext := ""
 	for _, sp := range context {
-		slog.Info("got point", "score", sp.Score, "text", sp.Content)
+		// slog.Info("got point", "score", sp.Score, "text", sp.Content)
 		modelContext += strings.TrimSpace(sp.Content) + "\n---\n"
 	}
 

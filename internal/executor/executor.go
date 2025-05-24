@@ -2,41 +2,14 @@ package executor
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"maps"
 	"reflect"
 
+	"github.com/alan-mat/awe/internal/api"
 	"github.com/alan-mat/awe/internal/transport"
 	"github.com/alan-mat/awe/internal/vector"
 )
-
-type ErrOperatorNotFound struct {
-	ExecutorName string
-	OperatorName string
-}
-
-func (e ErrOperatorNotFound) Error() string {
-	return fmt.Sprintf("invalid operator '%s' for executor '%s'", e.ExecutorName, e.OperatorName)
-}
-
-type ErrArgMissing struct {
-	ArgName string
-}
-
-func (e ErrArgMissing) Error() string {
-	return fmt.Sprintf("requested argument '%s' does not exist", e.ArgName)
-}
-
-type ErrInvalidArgumentType struct {
-	Name     string
-	Expected string
-	Received string
-}
-
-func (e ErrInvalidArgumentType) Error() string {
-	return fmt.Sprintf("argument '%s' must be of type '%s', but received '%s'",
-		e.Name, e.Expected, e.Received)
-}
 
 type Executor interface {
 	Execute(ctx context.Context, params *ExecutorParams) *ExecutorResult
@@ -50,6 +23,10 @@ type ExecutorParams struct {
 	Transport   transport.Transport
 	VectorStore vector.Store
 	Args        map[string]any
+
+	Children []*WorkflowNode
+	Routes   []*WorkflowRoute
+	Branches []*WorkflowBranch
 }
 
 type ExecutorParamOption func(*ExecutorParams)
@@ -65,6 +42,22 @@ func NewExecutorParams(id string, query string, options ...ExecutorParamOption) 
 		opt(ep)
 	}
 	return ep
+}
+
+func (p *ExecutorParams) SetChildren(children []*WorkflowNode) {
+	p.Children = children
+}
+
+func (p *ExecutorParams) SetRoutes(routes []*WorkflowRoute) {
+	p.Routes = routes
+}
+
+func (p *ExecutorParams) SetBranches(branches []*WorkflowBranch) {
+	p.Branches = branches
+}
+
+func (p *ExecutorParams) SetQuery(q string) {
+	p.query = q
 }
 
 func (p ExecutorParams) GetTaskID() string {
@@ -92,6 +85,10 @@ func (p ExecutorParams) WithQuery(q string) *ExecutorParams {
 	return newParams
 }
 
+// Copy creates a copy of the ExecutorParams object
+// The returned copy excludes the following fields:
+//
+//	Children, Routes, Branches
 func (p ExecutorParams) Copy() *ExecutorParams {
 	newArgs := make(map[string]any)
 	maps.Copy(newArgs, p.Args)
@@ -151,6 +148,40 @@ func (res *ExecutorResult) Get(valueName string) (any, bool) {
 		return nil, false
 	}
 	return val, true
+}
+
+func ProcessResult(params *ExecutorParams, result *ExecutorResult) *ExecutorParams {
+	newParams := params.Copy()
+
+	if query_transformed, ok := result.Values["query_transformed"].(string); ok {
+		// node executor returned a new transformed query
+		// set it as new query in params
+		newParams.SetQuery(query_transformed)
+	}
+
+	if new_context, ok := result.Values["context_docs"].([]*api.ScoredDocument); ok {
+		// check if the context should be replaced
+		if replace, ok := result.Values["replace_context"].(bool); ok {
+			if replace {
+				newParams.Args["context_docs"] = new_context
+			}
+		} else {
+			// otherwise append
+			context, ok := newParams.Args["context_docs"]
+			if !ok {
+				// no context_docs yet, create
+				newParams.Args["context_docs"] = new_context
+			} else {
+				context_typed, ok := context.([]*api.ScoredDocument)
+				if !ok {
+					slog.Error("workflow error", "msg", "invalid type of context docs in params")
+				}
+				newParams.Args["context_docs"] = append(context_typed, new_context...)
+			}
+		}
+	}
+
+	return newParams
 }
 
 func GetTypedArg[T any](p *ExecutorParams, argName string) (T, error) {

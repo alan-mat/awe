@@ -51,6 +51,17 @@ func ListExecutors() []string {
 	return names
 }
 
+func BatchRegisterWorkflows(workflows map[string]*executor.Workflow) error {
+	for name, wf := range workflows {
+		err := RegisterWorkflow(name, wf)
+		if err != nil {
+			return err
+		}
+	}
+	fmt.Println("registered workflows: ", ListWorkflows())
+	return nil
+}
+
 func RegisterWorkflow(name string, wf *executor.Workflow) error {
 	workflowLock.Lock()
 	defer workflowLock.Unlock()
