@@ -21,8 +21,9 @@ type GenerationRequest struct {
 	Prompt string
 
 	// Optional params
-	ModelName   string
-	Temperature float32
+	ModelName      string
+	ResponseSchema *Schema
+	Temperature    float32
 }
 
 func FromPrompt(prompt string) *GenerationRequest {

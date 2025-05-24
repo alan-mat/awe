@@ -56,6 +56,11 @@ func (p GeminiProvider) Generate(ctx context.Context, req api.GenerationRequest)
 		modelName = "gemini-2.0-flash"
 	}
 
+	if req.ResponseSchema != nil {
+		config.ResponseSchema = parseResponseSchema(req.ResponseSchema)
+		config.ResponseMIMEType = "application/json"
+	}
+
 	contents := genai.Text(req.Prompt)
 	i := p.client.Models.GenerateContentStream(ctx, modelName, contents, config)
 
@@ -67,7 +72,7 @@ func (p GeminiProvider) Generate(ctx context.Context, req api.GenerationRequest)
 }
 
 func (p GeminiProvider) Chat(ctx context.Context, req api.ChatRequest) (api.CompletionStream, error) {
-	contents := p.parseRequestHistory(req.History)
+	contents := parseRequestHistory(req.History)
 	contents = append(contents, genai.NewContentFromText(req.Query, genai.RoleUser))
 
 	config := &genai.GenerateContentConfig{}
@@ -194,7 +199,7 @@ func (p GeminiProvider) ChunkDocument(ctx context.Context, doc *api.DocumentCont
 	return respChunks.Chunks, nil
 }
 
-func (p GeminiProvider) parseRequestHistory(h []*api.ChatMessage) []*genai.Content {
+func parseRequestHistory(h []*api.ChatMessage) []*genai.Content {
 	contents := make([]*genai.Content, len(h))
 	roleTypes := map[api.ChatMessageRole]genai.Role{
 		api.RoleUser:      genai.RoleUser,
@@ -207,6 +212,29 @@ func (p GeminiProvider) parseRequestHistory(h []*api.ChatMessage) []*genai.Conte
 	return contents
 }
 
+func parseResponseSchema(s *api.Schema) *genai.Schema {
+	schema := &genai.Schema{
+		Description: s.Description,
+		Title:       s.Title,
+		Required:    s.Required,
+		Type:        genai.Type(s.Type),
+	}
+
+	if s.Items != nil {
+		schema.Items = parseResponseSchema(s.Items)
+	}
+
+	if s.Properties != nil {
+		properties := make(map[string]*genai.Schema, 0)
+		for k, v := range s.Properties {
+			properties[k] = parseResponseSchema(v)
+		}
+		schema.Properties = properties
+	}
+
+	return schema
+}
+
 type GeminiCompletionStream struct {
 	next func() (*genai.GenerateContentResponse, error, bool)
 	stop func()
@@ -214,8 +242,9 @@ type GeminiCompletionStream struct {
 
 func (s GeminiCompletionStream) Recv() (string, error) {
 	res, err, valid := s.next()
+	// slog.Info("res", "", res, "err", err)
 	if !valid {
-		//iterator is finished
+		// iterator is finished
 		return "", io.EOF
 	}
 
