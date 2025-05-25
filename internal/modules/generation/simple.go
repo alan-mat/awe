@@ -130,8 +130,6 @@ func (e *SimpleExecutor) chat(ctx context.Context, p *executor.ExecutorParams) e
 		History: history,
 	}
 
-	slog.Info("chat request", "history", history, "query", creq.Query)
-
 	cs, err := e.DefaultLMProvider.Chat(ctx, creq)
 	if err != nil {
 		slog.Warn("error creating chat completion stream, cancelling task")

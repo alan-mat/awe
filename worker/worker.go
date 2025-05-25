@@ -71,10 +71,8 @@ func (w *Worker) Start() error {
 	w.vectorStore = vs
 	defer w.vectorStore.Close()
 
-	mux := asynq.NewServeMux()
-	mux.Handle("awe:chat", tasks.NewChatTaskHandler(w.transport, w.vectorStore))
-
-	if err := w.asynqServer.Run(mux); err != nil {
+	handler := tasks.NewTaskHandler(w.transport, w.vectorStore)
+	if err := w.asynqServer.Run(handler); err != nil {
 		return err
 	}
 	return nil

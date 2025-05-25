@@ -22,9 +22,26 @@ type MessageStream interface {
 }
 
 type MessageStreamPayload struct {
-	ID      int    `json:"id"`
+	ID     int         `json:"id"`
+	Status string      `json:"status"`
+	Type   MessageType `json:"type"`
+
+	Content  string   `json:"content"`
+	Document Document `json:"document"`
+}
+
+type MessageType int
+
+const (
+	MessageTypeOther = iota
+	MessageTypeContent
+	MessageTypeDocument
+)
+
+type Document struct {
+	Title   string `json:"title"`
 	Content string `json:"content"`
-	Status  string `json:"status"`
+	Source  string `json:"source"`
 }
 
 func ProcessCompletionStream(ctx context.Context, ms MessageStream, cs api.CompletionStream) (string, error) {
@@ -40,8 +57,8 @@ func ProcessCompletionStream(ctx context.Context, ms MessageStream, cs api.Compl
 		if err != nil {
 			ms.Send(ctx, MessageStreamPayload{
 				ID:      msgId,
-				Content: "something went wrong",
 				Status:  "ERR",
+				Content: "something went wrong",
 			})
 			return sink, err
 		}
@@ -55,8 +72,9 @@ func ProcessCompletionStream(ctx context.Context, ms MessageStream, cs api.Compl
 
 		err = ms.Send(ctx, MessageStreamPayload{
 			ID:      msgId,
-			Content: acc,
+			Type:    MessageTypeContent,
 			Status:  "OK",
+			Content: acc,
 		})
 		if err != nil {
 			slog.Debug("failed sending chunk to message stream", "chunk", acc)

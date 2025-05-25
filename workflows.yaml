@@ -48,21 +48,20 @@ workflows:
 
       - module: system.Logger
 
-  rag_ws:
-    name: rag_ws
-    collection: hotpot
+  search_web:
+    name: search_web
+    search: true
+
     nodes:
       - module: pre.QueryTransform
 
       - module: retrieval.Web
         operator: search
         args:
-          top_n: 10
+          top_n: 20
       - module: post.Rerank
         args:
-          top_n: 5
-      - module: generation.Augmented
-      - module: system.Logger
+          top_n: 10
 
   iter:
     name: iter

@@ -3,8 +3,19 @@ package awe;
 
 option go_package = "github.com/alan-mat/awe/internal/proto";
 
+service AWEService {
+
+  rpc Chat(ChatRequest) returns (stream ChatResponse) {}
+  rpc Search(SearchRequest) returns (stream SearchResponse) {}
+  rpc Execute(ExecuteRequest) returns (stream ExecuteResponse) {}
+
+  rpc Trace(TraceRequest) returns (TraceResponse) {}
+  rpc Attach(AttachRequest) returns (stream ExecuteResponse) {}
+
+}
+
 enum ChatRole {
-  UNSPECIFIED = 0;
+  ROLE_UNSPECIFIED = 0;
   USER = 1;
   ASSISTANT = 2;
 }
@@ -29,8 +40,67 @@ message ChatResponse {
   string content = 4;
 }
 
-service AWEService {
+message SearchRequest {
+  string query = 1;
+  string user = 2;
 
-  rpc Chat(ChatRequest) returns (stream ChatResponse) {}
-  
+  map<string, string> args = 101;
+}
+
+message Document {
+  string title = 1;
+  string content = 2;
+  string source = 3;
+}
+
+message SearchResponse {
+  int32 msg_id = 1;
+  string trace_id = 2;
+  string status = 3;
+
+  Document document = 4;
+}
+
+message ExecuteRequest {
+  string workflow_id = 1;
+  string query = 2;
+  string user = 3;
+  repeated ChatMessage history = 4;
+
+  map<string, string> args = 101;
+}
+
+message ExecuteResponse {
+  int32 msg_id = 1;
+  string trace_id = 2;
+  string status = 3;
+
+  oneof payload {
+    string content = 30;
+    Document document = 31;
+  }
+}
+
+message TraceRequest {
+  string trace_id = 1;
+}
+
+enum TraceStatus {
+  STATUS_UNSPECIFIED = 0;
+  RUNNING = 1;
+  COMPLETED = 2;
+  FAILED = 3;
+}
+
+message TraceResponse {
+  string trace_id = 1;
+  TraceStatus status = 2;
+  int64 started_at = 3;
+  int64 completed_at = 4;
+  string query = 5;
+  string user = 6;
+}
+
+message AttachRequest {
+  string trace_id = 1;
 }

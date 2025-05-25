@@ -19,7 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AWEService_Chat_FullMethodName = "/awe.AWEService/Chat"
+	AWEService_Chat_FullMethodName    = "/awe.AWEService/Chat"
+	AWEService_Search_FullMethodName  = "/awe.AWEService/Search"
+	AWEService_Execute_FullMethodName = "/awe.AWEService/Execute"
+	AWEService_Trace_FullMethodName   = "/awe.AWEService/Trace"
+	AWEService_Attach_FullMethodName  = "/awe.AWEService/Attach"
 )
 
 // AWEServiceClient is the client API for AWEService service.
@@ -27,6 +31,10 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AWEServiceClient interface {
 	Chat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatResponse], error)
+	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SearchResponse], error)
+	Execute(ctx context.Context, in *ExecuteRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ExecuteResponse], error)
+	Trace(ctx context.Context, in *TraceRequest, opts ...grpc.CallOption) (*TraceResponse, error)
+	Attach(ctx context.Context, in *AttachRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ExecuteResponse], error)
 }
 
 type aWEServiceClient struct {
@@ -56,11 +64,82 @@ func (c *aWEServiceClient) Chat(ctx context.Context, in *ChatRequest, opts ...gr
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type AWEService_ChatClient = grpc.ServerStreamingClient[ChatResponse]
 
+func (c *aWEServiceClient) Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SearchResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &AWEService_ServiceDesc.Streams[1], AWEService_Search_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[SearchRequest, SearchResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type AWEService_SearchClient = grpc.ServerStreamingClient[SearchResponse]
+
+func (c *aWEServiceClient) Execute(ctx context.Context, in *ExecuteRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ExecuteResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &AWEService_ServiceDesc.Streams[2], AWEService_Execute_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ExecuteRequest, ExecuteResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type AWEService_ExecuteClient = grpc.ServerStreamingClient[ExecuteResponse]
+
+func (c *aWEServiceClient) Trace(ctx context.Context, in *TraceRequest, opts ...grpc.CallOption) (*TraceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TraceResponse)
+	err := c.cc.Invoke(ctx, AWEService_Trace_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aWEServiceClient) Attach(ctx context.Context, in *AttachRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ExecuteResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &AWEService_ServiceDesc.Streams[3], AWEService_Attach_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[AttachRequest, ExecuteResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type AWEService_AttachClient = grpc.ServerStreamingClient[ExecuteResponse]
+
 // AWEServiceServer is the server API for AWEService service.
 // All implementations must embed UnimplementedAWEServiceServer
 // for forward compatibility.
 type AWEServiceServer interface {
 	Chat(*ChatRequest, grpc.ServerStreamingServer[ChatResponse]) error
+	Search(*SearchRequest, grpc.ServerStreamingServer[SearchResponse]) error
+	Execute(*ExecuteRequest, grpc.ServerStreamingServer[ExecuteResponse]) error
+	Trace(context.Context, *TraceRequest) (*TraceResponse, error)
+	Attach(*AttachRequest, grpc.ServerStreamingServer[ExecuteResponse]) error
 	mustEmbedUnimplementedAWEServiceServer()
 }
 
@@ -73,6 +152,18 @@ type UnimplementedAWEServiceServer struct{}
 
 func (UnimplementedAWEServiceServer) Chat(*ChatRequest, grpc.ServerStreamingServer[ChatResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method Chat not implemented")
+}
+func (UnimplementedAWEServiceServer) Search(*SearchRequest, grpc.ServerStreamingServer[SearchResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method Search not implemented")
+}
+func (UnimplementedAWEServiceServer) Execute(*ExecuteRequest, grpc.ServerStreamingServer[ExecuteResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method Execute not implemented")
+}
+func (UnimplementedAWEServiceServer) Trace(context.Context, *TraceRequest) (*TraceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Trace not implemented")
+}
+func (UnimplementedAWEServiceServer) Attach(*AttachRequest, grpc.ServerStreamingServer[ExecuteResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method Attach not implemented")
 }
 func (UnimplementedAWEServiceServer) mustEmbedUnimplementedAWEServiceServer() {}
 func (UnimplementedAWEServiceServer) testEmbeddedByValue()                    {}
@@ -106,17 +197,88 @@ func _AWEService_Chat_Handler(srv interface{}, stream grpc.ServerStream) error {
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type AWEService_ChatServer = grpc.ServerStreamingServer[ChatResponse]
 
+func _AWEService_Search_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SearchRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(AWEServiceServer).Search(m, &grpc.GenericServerStream[SearchRequest, SearchResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type AWEService_SearchServer = grpc.ServerStreamingServer[SearchResponse]
+
+func _AWEService_Execute_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ExecuteRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(AWEServiceServer).Execute(m, &grpc.GenericServerStream[ExecuteRequest, ExecuteResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type AWEService_ExecuteServer = grpc.ServerStreamingServer[ExecuteResponse]
+
+func _AWEService_Trace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TraceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AWEServiceServer).Trace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AWEService_Trace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AWEServiceServer).Trace(ctx, req.(*TraceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AWEService_Attach_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(AttachRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(AWEServiceServer).Attach(m, &grpc.GenericServerStream[AttachRequest, ExecuteResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type AWEService_AttachServer = grpc.ServerStreamingServer[ExecuteResponse]
+
 // AWEService_ServiceDesc is the grpc.ServiceDesc for AWEService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var AWEService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "awe.AWEService",
 	HandlerType: (*AWEServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Trace",
+			Handler:    _AWEService_Trace_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Chat",
 			Handler:       _AWEService_Chat_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "Search",
+			Handler:       _AWEService_Search_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "Execute",
+			Handler:       _AWEService_Execute_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "Attach",
+			Handler:       _AWEService_Attach_Handler,
 			ServerStreams: true,
 		},
 	},

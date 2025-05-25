@@ -24,7 +24,7 @@ generate:
 		--go-grpc_out=paths=source_relative:$(GEN_GO_DIR) \
 		$(PROTO_SRC_DIR)/*.proto
 
-install:
+install: build
 	@echo "Installing $(BINARY_NAME) to GOBIN ..."
 	go install $(AWE_INSTALL)
 	@echo "Installing $(AWESOME_BINARY_NAME) to GOBIN ..."

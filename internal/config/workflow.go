@@ -42,6 +42,7 @@ type Workflow struct {
 	Identifier     string `yaml:"name"`
 	Description    string `yaml:"description"`
 	CollectionName string `yaml:"collection"`
+	Search         bool   `yaml:"search"`
 
 	Nodes []WorkflowNode `yaml:"nodes"`
 }

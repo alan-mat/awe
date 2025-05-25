@@ -28,9 +28,9 @@ type ChatMessage struct {
 func ParseChatHistory(h []*pb.ChatMessage) []*ChatMessage {
 	msgs := make([]*ChatMessage, len(h))
 	typesMap := map[pb.ChatRole]ChatMessageRole{
-		pb.ChatRole_UNSPECIFIED: RoleUser,
-		pb.ChatRole_USER:        RoleUser,
-		pb.ChatRole_ASSISTANT:   RoleAssistant,
+		pb.ChatRole_ROLE_UNSPECIFIED: RoleUser,
+		pb.ChatRole_USER:             RoleUser,
+		pb.ChatRole_ASSISTANT:        RoleAssistant,
 	}
 	for i, m := range h {
 		chatmsg := &ChatMessage{

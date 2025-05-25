@@ -24,22 +24,22 @@ const (
 type ChatRole int32
 
 const (
-	ChatRole_UNSPECIFIED ChatRole = 0
-	ChatRole_USER        ChatRole = 1
-	ChatRole_ASSISTANT   ChatRole = 2
+	ChatRole_ROLE_UNSPECIFIED ChatRole = 0
+	ChatRole_USER             ChatRole = 1
+	ChatRole_ASSISTANT        ChatRole = 2
 )
 
 // Enum value maps for ChatRole.
 var (
 	ChatRole_name = map[int32]string{
-		0: "UNSPECIFIED",
+		0: "ROLE_UNSPECIFIED",
 		1: "USER",
 		2: "ASSISTANT",
 	}
 	ChatRole_value = map[string]int32{
-		"UNSPECIFIED": 0,
-		"USER":        1,
-		"ASSISTANT":   2,
+		"ROLE_UNSPECIFIED": 0,
+		"USER":             1,
+		"ASSISTANT":        2,
 	}
 )
 
@@ -68,6 +68,58 @@ func (x ChatRole) Number() protoreflect.EnumNumber {
 // Deprecated: Use ChatRole.Descriptor instead.
 func (ChatRole) EnumDescriptor() ([]byte, []int) {
 	return file_awe_proto_rawDescGZIP(), []int{0}
+}
+
+type TraceStatus int32
+
+const (
+	TraceStatus_STATUS_UNSPECIFIED TraceStatus = 0
+	TraceStatus_RUNNING            TraceStatus = 1
+	TraceStatus_COMPLETED          TraceStatus = 2
+	TraceStatus_FAILED             TraceStatus = 3
+)
+
+// Enum value maps for TraceStatus.
+var (
+	TraceStatus_name = map[int32]string{
+		0: "STATUS_UNSPECIFIED",
+		1: "RUNNING",
+		2: "COMPLETED",
+		3: "FAILED",
+	}
+	TraceStatus_value = map[string]int32{
+		"STATUS_UNSPECIFIED": 0,
+		"RUNNING":            1,
+		"COMPLETED":          2,
+		"FAILED":             3,
+	}
+)
+
+func (x TraceStatus) Enum() *TraceStatus {
+	p := new(TraceStatus)
+	*p = x
+	return p
+}
+
+func (x TraceStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (TraceStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_awe_proto_enumTypes[1].Descriptor()
+}
+
+func (TraceStatus) Type() protoreflect.EnumType {
+	return &file_awe_proto_enumTypes[1]
+}
+
+func (x TraceStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use TraceStatus.Descriptor instead.
+func (TraceStatus) EnumDescriptor() ([]byte, []int) {
+	return file_awe_proto_rawDescGZIP(), []int{1}
 }
 
 type ChatMessage struct {
@@ -112,7 +164,7 @@ func (x *ChatMessage) GetRole() ChatRole {
 	if x != nil {
 		return x.Role
 	}
-	return ChatRole_UNSPECIFIED
+	return ChatRole_ROLE_UNSPECIFIED
 }
 
 func (x *ChatMessage) GetContent() string {
@@ -258,6 +310,548 @@ func (x *ChatResponse) GetContent() string {
 	return ""
 }
 
+type SearchRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	User          string                 `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
+	Args          map[string]string      `protobuf:"bytes,101,rep,name=args,proto3" json:"args,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchRequest) Reset() {
+	*x = SearchRequest{}
+	mi := &file_awe_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchRequest) ProtoMessage() {}
+
+func (x *SearchRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_awe_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchRequest.ProtoReflect.Descriptor instead.
+func (*SearchRequest) Descriptor() ([]byte, []int) {
+	return file_awe_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *SearchRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *SearchRequest) GetUser() string {
+	if x != nil {
+		return x.User
+	}
+	return ""
+}
+
+func (x *SearchRequest) GetArgs() map[string]string {
+	if x != nil {
+		return x.Args
+	}
+	return nil
+}
+
+type Document struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Title         string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	Source        string                 `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Document) Reset() {
+	*x = Document{}
+	mi := &file_awe_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Document) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Document) ProtoMessage() {}
+
+func (x *Document) ProtoReflect() protoreflect.Message {
+	mi := &file_awe_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Document.ProtoReflect.Descriptor instead.
+func (*Document) Descriptor() ([]byte, []int) {
+	return file_awe_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *Document) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *Document) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *Document) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+type SearchResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MsgId         int32                  `protobuf:"varint,1,opt,name=msg_id,json=msgId,proto3" json:"msg_id,omitempty"`
+	TraceId       string                 `protobuf:"bytes,2,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	Status        string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	Document      *Document              `protobuf:"bytes,4,opt,name=document,proto3" json:"document,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchResponse) Reset() {
+	*x = SearchResponse{}
+	mi := &file_awe_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchResponse) ProtoMessage() {}
+
+func (x *SearchResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_awe_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchResponse.ProtoReflect.Descriptor instead.
+func (*SearchResponse) Descriptor() ([]byte, []int) {
+	return file_awe_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *SearchResponse) GetMsgId() int32 {
+	if x != nil {
+		return x.MsgId
+	}
+	return 0
+}
+
+func (x *SearchResponse) GetTraceId() string {
+	if x != nil {
+		return x.TraceId
+	}
+	return ""
+}
+
+func (x *SearchResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *SearchResponse) GetDocument() *Document {
+	if x != nil {
+		return x.Document
+	}
+	return nil
+}
+
+type ExecuteRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WorkflowId    string                 `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
+	Query         string                 `protobuf:"bytes,2,opt,name=query,proto3" json:"query,omitempty"`
+	User          string                 `protobuf:"bytes,3,opt,name=user,proto3" json:"user,omitempty"`
+	History       []*ChatMessage         `protobuf:"bytes,4,rep,name=history,proto3" json:"history,omitempty"`
+	Args          map[string]string      `protobuf:"bytes,101,rep,name=args,proto3" json:"args,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecuteRequest) Reset() {
+	*x = ExecuteRequest{}
+	mi := &file_awe_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecuteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecuteRequest) ProtoMessage() {}
+
+func (x *ExecuteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_awe_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecuteRequest.ProtoReflect.Descriptor instead.
+func (*ExecuteRequest) Descriptor() ([]byte, []int) {
+	return file_awe_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ExecuteRequest) GetWorkflowId() string {
+	if x != nil {
+		return x.WorkflowId
+	}
+	return ""
+}
+
+func (x *ExecuteRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *ExecuteRequest) GetUser() string {
+	if x != nil {
+		return x.User
+	}
+	return ""
+}
+
+func (x *ExecuteRequest) GetHistory() []*ChatMessage {
+	if x != nil {
+		return x.History
+	}
+	return nil
+}
+
+func (x *ExecuteRequest) GetArgs() map[string]string {
+	if x != nil {
+		return x.Args
+	}
+	return nil
+}
+
+type ExecuteResponse struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	MsgId   int32                  `protobuf:"varint,1,opt,name=msg_id,json=msgId,proto3" json:"msg_id,omitempty"`
+	TraceId string                 `protobuf:"bytes,2,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	Status  string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	// Types that are valid to be assigned to Payload:
+	//
+	//	*ExecuteResponse_Content
+	//	*ExecuteResponse_Document
+	Payload       isExecuteResponse_Payload `protobuf_oneof:"payload"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecuteResponse) Reset() {
+	*x = ExecuteResponse{}
+	mi := &file_awe_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecuteResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecuteResponse) ProtoMessage() {}
+
+func (x *ExecuteResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_awe_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecuteResponse.ProtoReflect.Descriptor instead.
+func (*ExecuteResponse) Descriptor() ([]byte, []int) {
+	return file_awe_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ExecuteResponse) GetMsgId() int32 {
+	if x != nil {
+		return x.MsgId
+	}
+	return 0
+}
+
+func (x *ExecuteResponse) GetTraceId() string {
+	if x != nil {
+		return x.TraceId
+	}
+	return ""
+}
+
+func (x *ExecuteResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *ExecuteResponse) GetPayload() isExecuteResponse_Payload {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
+func (x *ExecuteResponse) GetContent() string {
+	if x != nil {
+		if x, ok := x.Payload.(*ExecuteResponse_Content); ok {
+			return x.Content
+		}
+	}
+	return ""
+}
+
+func (x *ExecuteResponse) GetDocument() *Document {
+	if x != nil {
+		if x, ok := x.Payload.(*ExecuteResponse_Document); ok {
+			return x.Document
+		}
+	}
+	return nil
+}
+
+type isExecuteResponse_Payload interface {
+	isExecuteResponse_Payload()
+}
+
+type ExecuteResponse_Content struct {
+	Content string `protobuf:"bytes,30,opt,name=content,proto3,oneof"`
+}
+
+type ExecuteResponse_Document struct {
+	Document *Document `protobuf:"bytes,31,opt,name=document,proto3,oneof"`
+}
+
+func (*ExecuteResponse_Content) isExecuteResponse_Payload() {}
+
+func (*ExecuteResponse_Document) isExecuteResponse_Payload() {}
+
+type TraceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TraceId       string                 `protobuf:"bytes,1,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TraceRequest) Reset() {
+	*x = TraceRequest{}
+	mi := &file_awe_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TraceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TraceRequest) ProtoMessage() {}
+
+func (x *TraceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_awe_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TraceRequest.ProtoReflect.Descriptor instead.
+func (*TraceRequest) Descriptor() ([]byte, []int) {
+	return file_awe_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *TraceRequest) GetTraceId() string {
+	if x != nil {
+		return x.TraceId
+	}
+	return ""
+}
+
+type TraceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TraceId       string                 `protobuf:"bytes,1,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	Status        TraceStatus            `protobuf:"varint,2,opt,name=status,proto3,enum=awe.TraceStatus" json:"status,omitempty"`
+	StartedAt     int64                  `protobuf:"varint,3,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	CompletedAt   int64                  `protobuf:"varint,4,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	Query         string                 `protobuf:"bytes,5,opt,name=query,proto3" json:"query,omitempty"`
+	User          string                 `protobuf:"bytes,6,opt,name=user,proto3" json:"user,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TraceResponse) Reset() {
+	*x = TraceResponse{}
+	mi := &file_awe_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TraceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TraceResponse) ProtoMessage() {}
+
+func (x *TraceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_awe_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TraceResponse.ProtoReflect.Descriptor instead.
+func (*TraceResponse) Descriptor() ([]byte, []int) {
+	return file_awe_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *TraceResponse) GetTraceId() string {
+	if x != nil {
+		return x.TraceId
+	}
+	return ""
+}
+
+func (x *TraceResponse) GetStatus() TraceStatus {
+	if x != nil {
+		return x.Status
+	}
+	return TraceStatus_STATUS_UNSPECIFIED
+}
+
+func (x *TraceResponse) GetStartedAt() int64 {
+	if x != nil {
+		return x.StartedAt
+	}
+	return 0
+}
+
+func (x *TraceResponse) GetCompletedAt() int64 {
+	if x != nil {
+		return x.CompletedAt
+	}
+	return 0
+}
+
+func (x *TraceResponse) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *TraceResponse) GetUser() string {
+	if x != nil {
+		return x.User
+	}
+	return ""
+}
+
+type AttachRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TraceId       string                 `protobuf:"bytes,1,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AttachRequest) Reset() {
+	*x = AttachRequest{}
+	mi := &file_awe_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AttachRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AttachRequest) ProtoMessage() {}
+
+func (x *AttachRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_awe_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AttachRequest.ProtoReflect.Descriptor instead.
+func (*AttachRequest) Descriptor() ([]byte, []int) {
+	return file_awe_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *AttachRequest) GetTraceId() string {
+	if x != nil {
+		return x.TraceId
+	}
+	return ""
+}
+
 var File_awe_proto protoreflect.FileDescriptor
 
 const file_awe_proto_rawDesc = "" +
@@ -278,14 +872,69 @@ const file_awe_proto_rawDesc = "" +
 	"\x06msg_id\x18\x01 \x01(\x05R\x05msgId\x12\x19\n" +
 	"\btrace_id\x18\x02 \x01(\tR\atraceId\x12\x16\n" +
 	"\x06status\x18\x03 \x01(\tR\x06status\x12\x18\n" +
-	"\acontent\x18\x04 \x01(\tR\acontent*4\n" +
-	"\bChatRole\x12\x0f\n" +
-	"\vUNSPECIFIED\x10\x00\x12\b\n" +
+	"\acontent\x18\x04 \x01(\tR\acontent\"\xa4\x01\n" +
+	"\rSearchRequest\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\x12\x12\n" +
+	"\x04user\x18\x02 \x01(\tR\x04user\x120\n" +
+	"\x04args\x18e \x03(\v2\x1c.awe.SearchRequest.ArgsEntryR\x04args\x1a7\n" +
+	"\tArgsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"R\n" +
+	"\bDocument\x12\x14\n" +
+	"\x05title\x18\x01 \x01(\tR\x05title\x12\x18\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\x12\x16\n" +
+	"\x06source\x18\x03 \x01(\tR\x06source\"\x85\x01\n" +
+	"\x0eSearchResponse\x12\x15\n" +
+	"\x06msg_id\x18\x01 \x01(\x05R\x05msgId\x12\x19\n" +
+	"\btrace_id\x18\x02 \x01(\tR\atraceId\x12\x16\n" +
+	"\x06status\x18\x03 \x01(\tR\x06status\x12)\n" +
+	"\bdocument\x18\x04 \x01(\v2\r.awe.DocumentR\bdocument\"\xf3\x01\n" +
+	"\x0eExecuteRequest\x12\x1f\n" +
+	"\vworkflow_id\x18\x01 \x01(\tR\n" +
+	"workflowId\x12\x14\n" +
+	"\x05query\x18\x02 \x01(\tR\x05query\x12\x12\n" +
+	"\x04user\x18\x03 \x01(\tR\x04user\x12*\n" +
+	"\ahistory\x18\x04 \x03(\v2\x10.awe.ChatMessageR\ahistory\x121\n" +
+	"\x04args\x18e \x03(\v2\x1d.awe.ExecuteRequest.ArgsEntryR\x04args\x1a7\n" +
+	"\tArgsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xaf\x01\n" +
+	"\x0fExecuteResponse\x12\x15\n" +
+	"\x06msg_id\x18\x01 \x01(\x05R\x05msgId\x12\x19\n" +
+	"\btrace_id\x18\x02 \x01(\tR\atraceId\x12\x16\n" +
+	"\x06status\x18\x03 \x01(\tR\x06status\x12\x1a\n" +
+	"\acontent\x18\x1e \x01(\tH\x00R\acontent\x12+\n" +
+	"\bdocument\x18\x1f \x01(\v2\r.awe.DocumentH\x00R\bdocumentB\t\n" +
+	"\apayload\")\n" +
+	"\fTraceRequest\x12\x19\n" +
+	"\btrace_id\x18\x01 \x01(\tR\atraceId\"\xc0\x01\n" +
+	"\rTraceResponse\x12\x19\n" +
+	"\btrace_id\x18\x01 \x01(\tR\atraceId\x12(\n" +
+	"\x06status\x18\x02 \x01(\x0e2\x10.awe.TraceStatusR\x06status\x12\x1d\n" +
+	"\n" +
+	"started_at\x18\x03 \x01(\x03R\tstartedAt\x12!\n" +
+	"\fcompleted_at\x18\x04 \x01(\x03R\vcompletedAt\x12\x14\n" +
+	"\x05query\x18\x05 \x01(\tR\x05query\x12\x12\n" +
+	"\x04user\x18\x06 \x01(\tR\x04user\"*\n" +
+	"\rAttachRequest\x12\x19\n" +
+	"\btrace_id\x18\x01 \x01(\tR\atraceId*9\n" +
+	"\bChatRole\x12\x14\n" +
+	"\x10ROLE_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04USER\x10\x01\x12\r\n" +
-	"\tASSISTANT\x10\x022=\n" +
+	"\tASSISTANT\x10\x02*M\n" +
+	"\vTraceStatus\x12\x16\n" +
+	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
+	"\aRUNNING\x10\x01\x12\r\n" +
+	"\tCOMPLETED\x10\x02\x12\n" +
+	"\n" +
+	"\x06FAILED\x10\x032\x98\x02\n" +
 	"\n" +
 	"AWEService\x12/\n" +
-	"\x04Chat\x12\x10.awe.ChatRequest\x1a\x11.awe.ChatResponse\"\x000\x01B(Z&github.com/alan-mat/awe/internal/protob\x06proto3"
+	"\x04Chat\x12\x10.awe.ChatRequest\x1a\x11.awe.ChatResponse\"\x000\x01\x125\n" +
+	"\x06Search\x12\x12.awe.SearchRequest\x1a\x13.awe.SearchResponse\"\x000\x01\x128\n" +
+	"\aExecute\x12\x13.awe.ExecuteRequest\x1a\x14.awe.ExecuteResponse\"\x000\x01\x120\n" +
+	"\x05Trace\x12\x11.awe.TraceRequest\x1a\x12.awe.TraceResponse\"\x00\x126\n" +
+	"\x06Attach\x12\x12.awe.AttachRequest\x1a\x14.awe.ExecuteResponse\"\x000\x01B(Z&github.com/alan-mat/awe/internal/protob\x06proto3"
 
 var (
 	file_awe_proto_rawDescOnce sync.Once
@@ -299,26 +948,51 @@ func file_awe_proto_rawDescGZIP() []byte {
 	return file_awe_proto_rawDescData
 }
 
-var file_awe_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_awe_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_awe_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_awe_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_awe_proto_goTypes = []any{
-	(ChatRole)(0),        // 0: awe.ChatRole
-	(*ChatMessage)(nil),  // 1: awe.ChatMessage
-	(*ChatRequest)(nil),  // 2: awe.ChatRequest
-	(*ChatResponse)(nil), // 3: awe.ChatResponse
-	nil,                  // 4: awe.ChatRequest.ArgsEntry
+	(ChatRole)(0),           // 0: awe.ChatRole
+	(TraceStatus)(0),        // 1: awe.TraceStatus
+	(*ChatMessage)(nil),     // 2: awe.ChatMessage
+	(*ChatRequest)(nil),     // 3: awe.ChatRequest
+	(*ChatResponse)(nil),    // 4: awe.ChatResponse
+	(*SearchRequest)(nil),   // 5: awe.SearchRequest
+	(*Document)(nil),        // 6: awe.Document
+	(*SearchResponse)(nil),  // 7: awe.SearchResponse
+	(*ExecuteRequest)(nil),  // 8: awe.ExecuteRequest
+	(*ExecuteResponse)(nil), // 9: awe.ExecuteResponse
+	(*TraceRequest)(nil),    // 10: awe.TraceRequest
+	(*TraceResponse)(nil),   // 11: awe.TraceResponse
+	(*AttachRequest)(nil),   // 12: awe.AttachRequest
+	nil,                     // 13: awe.ChatRequest.ArgsEntry
+	nil,                     // 14: awe.SearchRequest.ArgsEntry
+	nil,                     // 15: awe.ExecuteRequest.ArgsEntry
 }
 var file_awe_proto_depIdxs = []int32{
-	0, // 0: awe.ChatMessage.role:type_name -> awe.ChatRole
-	1, // 1: awe.ChatRequest.history:type_name -> awe.ChatMessage
-	4, // 2: awe.ChatRequest.args:type_name -> awe.ChatRequest.ArgsEntry
-	2, // 3: awe.AWEService.Chat:input_type -> awe.ChatRequest
-	3, // 4: awe.AWEService.Chat:output_type -> awe.ChatResponse
-	4, // [4:5] is the sub-list for method output_type
-	3, // [3:4] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	0,  // 0: awe.ChatMessage.role:type_name -> awe.ChatRole
+	2,  // 1: awe.ChatRequest.history:type_name -> awe.ChatMessage
+	13, // 2: awe.ChatRequest.args:type_name -> awe.ChatRequest.ArgsEntry
+	14, // 3: awe.SearchRequest.args:type_name -> awe.SearchRequest.ArgsEntry
+	6,  // 4: awe.SearchResponse.document:type_name -> awe.Document
+	2,  // 5: awe.ExecuteRequest.history:type_name -> awe.ChatMessage
+	15, // 6: awe.ExecuteRequest.args:type_name -> awe.ExecuteRequest.ArgsEntry
+	6,  // 7: awe.ExecuteResponse.document:type_name -> awe.Document
+	1,  // 8: awe.TraceResponse.status:type_name -> awe.TraceStatus
+	3,  // 9: awe.AWEService.Chat:input_type -> awe.ChatRequest
+	5,  // 10: awe.AWEService.Search:input_type -> awe.SearchRequest
+	8,  // 11: awe.AWEService.Execute:input_type -> awe.ExecuteRequest
+	10, // 12: awe.AWEService.Trace:input_type -> awe.TraceRequest
+	12, // 13: awe.AWEService.Attach:input_type -> awe.AttachRequest
+	4,  // 14: awe.AWEService.Chat:output_type -> awe.ChatResponse
+	7,  // 15: awe.AWEService.Search:output_type -> awe.SearchResponse
+	9,  // 16: awe.AWEService.Execute:output_type -> awe.ExecuteResponse
+	11, // 17: awe.AWEService.Trace:output_type -> awe.TraceResponse
+	9,  // 18: awe.AWEService.Attach:output_type -> awe.ExecuteResponse
+	14, // [14:19] is the sub-list for method output_type
+	9,  // [9:14] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_awe_proto_init() }
@@ -326,13 +1000,17 @@ func file_awe_proto_init() {
 	if File_awe_proto != nil {
 		return
 	}
+	file_awe_proto_msgTypes[7].OneofWrappers = []any{
+		(*ExecuteResponse_Content)(nil),
+		(*ExecuteResponse_Document)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_awe_proto_rawDesc), len(file_awe_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   4,
+			NumEnums:      2,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

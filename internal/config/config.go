@@ -47,7 +47,13 @@ func ParseWorkflows(conf WorkflowConfig) (map[string]*executor.Workflow, error) 
 			collectionName = cw.CollectionName
 		}
 
-		workflow := executor.NewWorkflow(cw.Identifier, cw.Description, collectionName, nodes)
+		workflow := executor.NewWorkflow(
+			cw.Identifier,
+			cw.Description,
+			collectionName,
+			cw.Search,
+			nodes,
+		)
 
 		workflows[cw.Identifier] = workflow
 	}
