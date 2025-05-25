@@ -106,3 +106,35 @@ workflows:
               - module: generation.Augmented
 
       - module: system.Logger
+
+  rsplit:
+    name: rsplit
+    collection: hotpot
+    nodes:
+      #- module: pre.QueryTransform
+      - module: orchestration.Branching
+        operator: rrf
+        type: branching
+        #args:
+        #  rrf_k: 15
+        #  limit: 4
+        branches:
+          - name: KB
+            nodes:
+              - module: retrieval.Semantic
+                args:
+                  top_n: 15
+              - module: post.Rerank
+                args:
+                  top_n: 5
+
+          - name: WEB
+            nodes:
+              - module: retrieval.Web
+                args:
+                  top_n: 15
+              - module: post.Rerank
+                args:
+                  top_n: 5
+      - module: generation.Augmented
+      - module: system.Logger

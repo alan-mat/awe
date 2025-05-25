@@ -26,3 +26,12 @@ type ScoredDocument struct {
 	Title string
 	Url   string
 }
+
+func (d ScoredDocument) Copy() *ScoredDocument {
+	return &ScoredDocument{
+		Content: d.Content,
+		Score:   d.Score,
+		Title:   d.Title,
+		Url:     d.Url,
+	}
+}

@@ -4,17 +4,17 @@ const (
 	NodeTypeLinear      = "default"
 	NodeTypeLoop        = "loop"
 	NodeTypeConditional = "conditional"
-	NodeTypeBranching   = "parallel"
+	NodeTypeBranching   = "branching"
 )
 
 type WorkflowNodeType string
 
-var workflowNodeTypeMap = map[string]WorkflowNodeType{
+/* var workflowNodeTypeMap = map[string]WorkflowNodeType{
 	"default":     NodeTypeLinear,
 	"loop":        NodeTypeLoop,
 	"conditional": NodeTypeConditional,
-	"parallel":    NodeTypeBranching,
-}
+	"branching":   NodeTypeBranching,
+} */
 
 type WorkflowNode struct {
 	Module   string           `yaml:"module"`
