@@ -3,6 +3,7 @@ module github.com/alan-mat/awe
 go 1.24.0
 
 require (
+	github.com/alexflint/go-arg v1.5.1
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.5
 	github.com/charmbracelet/lipgloss v1.1.0
@@ -10,7 +11,6 @@ require (
 	github.com/goccy/go-yaml v1.17.1
 	github.com/google/uuid v1.6.0
 	github.com/hibiken/asynq v0.25.1
-	github.com/joho/godotenv v1.5.1
 	github.com/qdrant/go-client v1.14.0
 	github.com/redis/go-redis/v9 v9.8.0
 	github.com/sashabaranov/go-openai v1.39.1
@@ -24,6 +24,7 @@ require (
 	cloud.google.com/go v0.116.0 // indirect
 	cloud.google.com/go/auth v0.9.3 // indirect
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
+	github.com/alexflint/go-scalar v1.2.0 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.30.3 // indirect
 	github.com/aws/smithy-go v1.20.3 // indirect

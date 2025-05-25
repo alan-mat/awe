@@ -63,7 +63,7 @@ func (h *ChatTaskHandler) ProcessTask(ctx context.Context, t *asynq.Task) error 
 	slog.Info("received chat task", "user", p.User, "query", p.Query, "history", p.History)
 	slog.Info("task id", "id", id)
 
-	workflow, err := registry.GetWorkflow("rsplit")
+	workflow, err := registry.GetWorkflow("qrouter")
 	if err != nil {
 		errf := fmt.Errorf("workflow not found: %v (%w)", err, asynq.SkipRetry)
 		slog.Error(fmt.Sprintf("%v", errf))

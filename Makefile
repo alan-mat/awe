@@ -1,10 +1,11 @@
-MAIN_DIR := .
-AWESOME_MAIN_DIR := cmd/awesome/*
-AWESOME_INSTALL := github.com/alan-mat/awe/cmd/awesome
-
 BUILD_DIR := bin
 
+MAIN_DIR := cmd/awe/*
 BINARY_NAME := awe
+AWE_INSTALL := github.com/alan-mat/awe/cmd/awe
+
+AWESOME_MAIN_DIR := cmd/awesome/*
+AWESOME_INSTALL := github.com/alan-mat/awe/cmd/awesome
 AWESOME_BINARY_NAME := awesome
 
 PROTO_SRC_DIR := proto
@@ -25,7 +26,7 @@ generate:
 
 install:
 	@echo "Installing $(BINARY_NAME) to GOBIN ..."
-	go install $(MAIN_DIR)
+	go install $(AWE_INSTALL)
 	@echo "Installing $(AWESOME_BINARY_NAME) to GOBIN ..."
 	go install $(AWESOME_INSTALL)
 
@@ -34,14 +35,10 @@ build:
 	@mkdir -p $(BUILD_DIR)
 
 	@echo "Building binary under $(BUILD_DIR)/$(BINARY_NAME) ..."
-	go build -v -o $(BUILD_DIR)/$(BINARY_NAME) .
+	go build -v -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_DIR)
 
 	@echo "Building binary under $(BUILD_DIR)/$(AWESOME_BINARY_NAME) ..."
 	go build -v -o $(BUILD_DIR)/$(AWESOME_BINARY_NAME) $(AWESOME_MAIN_DIR)
-
-run: build
-	@echo "Running $(BINARY_NAME) ..."
-	$(BUILD_DIR)/$(BINARY_NAME)
 
 clean:
 	@echo "Cleaning build dir ($(BUILD_DIR)) ..."

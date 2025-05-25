@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -44,7 +43,7 @@ func (s RedisStream) Send(ctx context.Context, payload MessageStreamPayload) err
 		return err
 	}
 
-	res, err := s.rdb.XAdd(ctx, &redis.XAddArgs{
+	_, err = s.rdb.XAdd(ctx, &redis.XAddArgs{
 		Stream: s.id,
 		ID:     "*",
 		Values: map[string]any{
@@ -55,8 +54,6 @@ func (s RedisStream) Send(ctx context.Context, payload MessageStreamPayload) err
 	if err != nil {
 		return err
 	}
-
-	slog.Debug("received result from redis", "res", res)
 	return nil
 }
 
