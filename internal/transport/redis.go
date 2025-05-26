@@ -18,12 +18,38 @@ func NewRedisTransport(rdb *redis.Client) *RedisTransport {
 	}
 }
 
+func (t RedisTransport) SetTrace(ctx context.Context, trace *RequestTrace) error {
+	key := fmt.Sprintf("awe:trace:%s", trace.ID)
+	_, err := t.rdb.HSet(ctx, key, trace).Result()
+	if err != nil {
+		return fmt.Errorf("failed to set trace: %w", err)
+	}
+
+	_, err = t.rdb.Expire(ctx, key, TraceExpiry).Result()
+	if err != nil {
+		return fmt.Errorf("failed to set trace expiry: %w", err)
+	}
+
+	return nil
+}
+
+func (t RedisTransport) GetTrace(ctx context.Context, traceId string) (*RequestTrace, error) {
+	key := fmt.Sprintf("awe:trace:%s", traceId)
+	var trace RequestTrace
+	err := t.rdb.HGetAll(ctx, key).Scan(&trace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve trace with id '%s': %w", traceId, err)
+	}
+
+	return &trace, nil
+}
+
 func (t *RedisTransport) GetMessageStream(id string) (MessageStream, error) {
 	if len(id) == 0 {
 		return nil, fmt.Errorf("invalid stream ID")
 	}
 	rs := &RedisStream{
-		id:          id,
+		id:          fmt.Sprintf("awe:stream:%s", id),
 		lastRedisID: "0",
 		rdb:         t.rdb,
 	}

@@ -97,14 +97,14 @@ workflows:
             nodes:
               - module: generation.Simple
                 operator: chat
+              - module: system.Logger
           
           - key: web_search
             description: Complex queries that to be answered, require exact information from a web search. 
             nodes:
               - module: retrieval.Web
               - module: generation.Augmented
-
-      - module: system.Logger
+              - module: system.Logger
 
   rsplit:
     name: rsplit
