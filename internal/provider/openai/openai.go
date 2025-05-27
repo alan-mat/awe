@@ -26,7 +26,7 @@ func New() *OpenAIProvider {
 
 func (p OpenAIProvider) Generate(ctx context.Context, req api.GenerationRequest) (api.CompletionStream, error) {
 	openaiReq := openai.ChatCompletionRequest{
-		Model:       openai.GPT4Dot1Nano,
+		Model:       openai.O4Mini,
 		Temperature: req.Temperature,
 		Messages: []openai.ChatCompletionMessage{
 			{
@@ -39,6 +39,13 @@ func (p OpenAIProvider) Generate(ctx context.Context, req api.GenerationRequest)
 
 	if req.ModelName != "" {
 		openaiReq.Model = req.ModelName
+	}
+
+	if req.ResponseSchema != nil {
+		openaiReq.ResponseFormat = &openai.ChatCompletionResponseFormat{
+			Type:       openai.ChatCompletionResponseFormatTypeJSONSchema,
+			JSONSchema: p.parseResponseSchema(req.ResponseSchema),
+		}
 	}
 
 	s, err := p.client.CreateChatCompletionStream(ctx, openaiReq)
@@ -73,7 +80,7 @@ func (p OpenAIProvider) Chat(ctx context.Context, req api.ChatRequest) (api.Comp
 	})
 
 	openaiReq := openai.ChatCompletionRequest{
-		Model:    openai.GPT4Dot1Mini,
+		Model:    openai.O4Mini,
 		Messages: messages,
 		Stream:   true,
 	}
@@ -154,6 +161,14 @@ func (p OpenAIProvider) parseRequestHistory(h []*api.ChatMessage) []openai.ChatC
 		msgs[i] = ccm
 	}
 	return msgs
+}
+
+func (p OpenAIProvider) parseResponseSchema(s *api.Schema) *openai.ChatCompletionResponseFormatJSONSchema {
+	schema := &openai.ChatCompletionResponseFormatJSONSchema{
+		Name:   s.Title,
+		Schema: s,
+	}
+	return schema
 }
 
 /* type OpenAIGenerationStream struct {
