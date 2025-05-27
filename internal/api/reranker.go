@@ -10,6 +10,7 @@ type RerankRequest struct {
 	// Optional params
 	Limit     int
 	ModelName string
+	Threshold *float64
 }
 
 type RerankResponse struct {

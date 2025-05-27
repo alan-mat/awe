@@ -116,6 +116,13 @@ func (e RerankExecutor) cohereRerank(ctx context.Context, p *executor.ExecutorPa
 		rerankRequest.Limit = topN
 	}
 
+	// Optional
+	// threshold -
+	thresholdArg, err := executor.GetTypedArg[float64](p, "threshold")
+	if err == nil {
+		rerankRequest.Threshold = &thresholdArg
+	}
+
 	resp, err := e.DefaultReranker.Rerank(ctx, *rerankRequest)
 	if err != nil {
 		return nil, fmt.Errorf("rerank request failed: %w", err)

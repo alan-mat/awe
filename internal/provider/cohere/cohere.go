@@ -257,9 +257,14 @@ func (p CohereProvider) Rerank(ctx context.Context, req api.RerankRequest) (*api
 		return nil, fmt.Errorf("rerank request failed: %w", err)
 	}
 
+	threshold := api.RerankScoreThreshold
+	if req.Threshold != nil {
+		threshold = *req.Threshold
+	}
+
 	scoredDocs := make([]*api.ScoredDocument, 0, len(resp.Results))
 	for _, result := range resp.Results {
-		if result.RelevanceScore >= api.RerankScoreThreshold {
+		if result.RelevanceScore >= threshold {
 			scoredDocs = append(scoredDocs, &api.ScoredDocument{
 				Content: result.Document.Text,
 				Score:   result.RelevanceScore,
