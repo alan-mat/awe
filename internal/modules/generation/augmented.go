@@ -19,17 +19,32 @@ import (
 var augmentedExecutorDescriptor = "generation.Augmented"
 
 const (
+	/* promptGenerateWithContext = `You are an AI assistant that answers user queries. You have been provided with some potentially relevant context, which you should use to inform and support your answer.
+
+	**INSTRUCTIONS:**
+
+	1.  Read the provided CONTEXT to understand if it is relevant to the user's QUERY and how it can supplement your knowledge.
+	2.  Understand the user's QUERY.
+	3.  Formulate a comprehensive answer to the QUERY, drawing upon both the provided CONTEXT and your own internal knowledge.
+	4.  Use the CONTEXT to provide specific details, examples, or confirmation where applicable.
+	5.  If the CONTEXT provides information that is highly relevant or crucial to the answer, integrate it seamlessly.
+	6.  If the CONTEXT is not very relevant to the QUERY, rely primarily on your internal knowledge.
+	7.  Format your answer clearly and use formatting (like bullet points or bolding) when appropriate for readability.
+
+	**CONTEXT:**
+	{{.Context}}
+
+	**QUERY:**
+	` */
 	promptGenerateWithContext = `You are an AI assistant that answers user queries. You have been provided with some potentially relevant context, which you should use to inform and support your answer.
 
 **INSTRUCTIONS:**
 
 1.  Read the provided CONTEXT to understand if it is relevant to the user's QUERY and how it can supplement your knowledge.
 2.  Understand the user's QUERY.
-3.  Formulate a comprehensive answer to the QUERY, drawing upon both the provided CONTEXT and your own internal knowledge.
-4.  Use the CONTEXT to provide specific details, examples, or confirmation where applicable.
-5.  If the CONTEXT provides information that is highly relevant or crucial to the answer, integrate it seamlessly.
-6.  If the CONTEXT is not very relevant to the QUERY, rely primarily on your internal knowledge.
-7.  Format your answer clearly and use formatting (like bullet points or bolding) when appropriate for readability.
+3.  Formulate a clear but concise answer to the user's QUERY, relying on the provided CONTEXT. 
+4.  If you cannot answer the QUERY using the CONTEXT provided, answer with "I don't know".
+5.  Respond with as little words as necessary to completely answer the question. Your answer does not have to be a complete sentence. If the QUERY is answerable in just one word, do it in one word.
 
 **CONTEXT:**
 {{.Context}}
@@ -62,7 +77,7 @@ type AugmentedExecutor struct {
 
 func NewAugmentedExecutor() (*AugmentedExecutor, error) {
 	ep, err := provider.NewEmbedder(provider.EmbedderTypeJina)
-	lp, err2 := provider.NewLM(provider.LMTypeGemini)
+	lp, err2 := provider.NewLM(provider.LMTypeOpenai)
 	joinedErr := errors.Join(err, err2)
 	if joinedErr != nil {
 		return nil, fmt.Errorf("failed to initialize default providers: %w", err)

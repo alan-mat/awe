@@ -34,7 +34,7 @@ type SimpleExecutor struct {
 }
 
 func NewSimpleExecutor() (*SimpleExecutor, error) {
-	lp, err := provider.NewLM(provider.LMTypeGemini)
+	lp, err := provider.NewLM(provider.LMTypeOpenai)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize default providers: %w", err)
 	}
