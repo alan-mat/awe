@@ -25,7 +25,7 @@ AWE is an API server for hosting and executing **agentic workflows**, written in
 ## Installation
 
 ```bash
-go install github.com/alan-mat/awe/cmd/awe
+go install github.com/alan-mat/awe/cmd/awe@latest
 ```
 
 or
@@ -108,4 +108,4 @@ Any contributions are welcome. Feel free to fork this repository and then open a
 
 ## License
 
-This project is licensed under the MIT [License](LICENSE).
+This project is licensed under the MIT [License](LICENSE.md).
