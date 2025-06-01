@@ -21,7 +21,30 @@ import (
 	_ "github.com/alan-mat/awe/internal/modules/system"
 )
 
+type WorkerConfig struct {
+	Workers int
+
+	RedisAddr     string
+	RedisUsername string
+	RedisPassword string
+	RedisDB       int
+
+	QdrantHost string
+	QdrantPort int
+}
+
+func DefaultConfig() WorkerConfig {
+	return WorkerConfig{
+		Workers:    10,
+		RedisAddr:  "localhost:6379",
+		QdrantHost: "localhost",
+		QdrantPort: 6334,
+	}
+}
+
 type Worker struct {
+	config WorkerConfig
+
 	rdb         *redis.Client
 	asynqServer *asynq.Server
 
@@ -29,8 +52,10 @@ type Worker struct {
 	vectorStore vector.Store
 }
 
-func New() *Worker {
-	return &Worker{}
+func New(config WorkerConfig) *Worker {
+	return &Worker{
+		config: config,
+	}
 }
 
 func (w Worker) RegisterWorkflows(path string) error {
@@ -49,22 +74,23 @@ func (w Worker) RegisterWorkflows(path string) error {
 
 func (w *Worker) Start() error {
 	w.rdb = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379", // use default Addr
-		Password: "",               // no password set
-		DB:       0,                // use default DB
+		Addr:     w.config.RedisAddr,
+		Username: w.config.RedisUsername,
+		Password: w.config.RedisPassword,
+		DB:       w.config.RedisDB,
 	})
 	defer w.rdb.Close()
 
 	w.asynqServer = asynq.NewServerFromRedisClient(
 		w.rdb,
 		asynq.Config{
-			Concurrency: 10,
+			Concurrency: w.config.Workers,
 		},
 	)
 
 	w.transport = transport.NewRedisTransport(w.rdb)
 
-	vs, err := vector.NewQdrantStoreDefault()
+	vs, err := vector.NewQdrantStore(w.config.QdrantHost, w.config.QdrantPort)
 	if err != nil {
 		return fmt.Errorf("failed to initialize vector store: %w", err)
 	}

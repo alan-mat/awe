@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"log/slog"
 	"net"
 
@@ -12,9 +13,28 @@ import (
 	"github.com/alan-mat/awe/internal/transport"
 )
 
+type ServerConfig struct {
+	ListenHost string
+	ListenPort int
+
+	RedisAddr     string
+	RedisUsername string
+	RedisPassword string
+	RedisDB       int
+}
+
+func DefaultConfig() ServerConfig {
+	return ServerConfig{
+		ListenPort: 50051,
+		RedisAddr:  "localhost:6379",
+	}
+}
+
 // Server implements the AWEService
 type Server struct {
 	pb.UnimplementedAWEServiceServer
+
+	config ServerConfig
 
 	rdb *redis.Client
 
@@ -22,20 +42,24 @@ type Server struct {
 	asynqClient *asynq.Client
 }
 
-func New() *Server {
-	return &Server{}
+func New(config ServerConfig) *Server {
+	return &Server{
+		config: config,
+	}
 }
 
 func (s Server) Serve() error {
-	lis, err := net.Listen("tcp", ":50051")
+	lisAddr := fmt.Sprintf("%s:%d", s.config.ListenHost, s.config.ListenPort)
+	lis, err := net.Listen("tcp", lisAddr)
 	if err != nil {
 		slog.Error("failed to start server", "err", err)
 	}
 
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379", // use default Addr
-		Password: "",               // no password set
-		DB:       0,                // use default DB
+		Addr:     s.config.RedisAddr,
+		Username: s.config.RedisUsername,
+		Password: s.config.RedisPassword,
+		DB:       s.config.RedisDB,
 	})
 	defer rdb.Close()
 
@@ -51,7 +75,7 @@ func (s Server) Serve() error {
 		asynqClient: client,
 	})
 
-	slog.Info("Server starting on :50051")
+	slog.Info("Server starting", "listener", lisAddr)
 	if err := grpcServer.Serve(lis); err != nil {
 		slog.Error("failed to serve", "err", err)
 		return err

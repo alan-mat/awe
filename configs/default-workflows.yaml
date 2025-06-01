@@ -1,0 +1,31 @@
+---
+workflows:
+  basic:
+    name: chat_basic
+    nodes:
+      - module: generation.Simple
+        operator: chat
+
+      - module: system.Logger
+        operator: acc_stream
+
+  index_local_files:
+    name: index_local
+    collection: mycollection
+    nodes:
+      - module: system.Reader
+        args:
+          path: ./files
+
+      - module: indexing.Simple
+
+  naive_rag:
+    name: naive_rag
+    collection: mycollection
+    nodes:
+      - module: retrieval.Semantic
+        args:
+          top_n: 10
+
+      - module: generation.Augmented
+      - module: system.Logger

@@ -18,7 +18,7 @@ var (
 )
 
 func ReadConfig(path string) WorkflowConfig {
-	file, err := os.ReadFile("workflows.yaml")
+	file, err := os.ReadFile(path)
 	if err != nil {
 		panic(err)
 	}

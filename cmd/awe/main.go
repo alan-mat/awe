@@ -37,6 +37,8 @@ type args struct {
 	Server *serveCmd  `arg:"subcommand:serve" help:"start the AWE server"`
 	Worker *workerCmd `arg:"subcommand:work" help:"start the AWE worker"`
 	// Workflow *workflowCmd `arg:"subcommand" help:"manage workflows"`
+
+	ConfigPath string `arg:"-c,--config" default:"awe-config.yaml" help:"path to the config file" placeholder:""`
 }
 
 func (args) Version() string {
@@ -61,10 +63,15 @@ func main() {
 		os.Exit(0)
 	}
 
+	conf, err := ReadConfig(args.ConfigPath)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	slog.SetDefault(logger)
 
-	var cmd func(any) error
+	var cmd func(any, *config) error
 
 	switch p.Subcommand().(type) {
 	case *serveCmd:
@@ -75,19 +82,51 @@ func main() {
 		p.FailSubcommand("unrecognized command", p.SubcommandNames()...)
 	}
 
-	cmd(p.Subcommand())
+	cmd(p.Subcommand(), conf)
 }
 
-func startServer(args any) error {
-	srv := server.New()
+func startServer(args any, conf *config) error {
+	var serverConfig server.ServerConfig
+	if conf == nil {
+		serverConfig = server.DefaultConfig()
+	} else {
+		serverConfig = server.ServerConfig{
+			ListenHost:    conf.Server.ListenHost,
+			ListenPort:    conf.Server.ListenPort,
+			RedisAddr:     conf.Transport.Addr,
+			RedisUsername: conf.Transport.Username,
+			RedisPassword: conf.Transport.Password,
+			RedisDB:       conf.Transport.DB,
+		}
+	}
+
+	srv := server.New(serverConfig)
 	return srv.Serve()
 }
 
-func startWorker(args any) error {
-	worker := worker.New()
-	err := worker.RegisterWorkflows("workflows.yaml")
+func startWorker(args any, conf *config) error {
+	var workerConfig worker.WorkerConfig
+	var workflows string
+	if conf == nil {
+		workerConfig = worker.DefaultConfig()
+	} else {
+		workerConfig = worker.WorkerConfig{
+			Workers:       conf.Worker.Workers,
+			RedisAddr:     conf.Transport.Addr,
+			RedisUsername: conf.Transport.Username,
+			RedisPassword: conf.Transport.Password,
+			RedisDB:       conf.Transport.DB,
+			QdrantHost:    conf.VectorStore.Host,
+			QdrantPort:    conf.VectorStore.Port,
+		}
+		workflows = conf.WorkflowConfigPath
+	}
+
+	worker := worker.New(workerConfig)
+	err := worker.RegisterWorkflows(workflows)
 	if err != nil {
 		return err
 	}
+
 	return worker.Start()
 }

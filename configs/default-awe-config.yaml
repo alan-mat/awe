@@ -1,0 +1,16 @@
+---
+workflows: configs/default-workflows.yaml
+
+worker:
+  workers: 10
+
+server:
+  listen_port: 50051
+
+transport:
+  addr: "localhost:6379"
+  db: 0
+
+vector_store:
+  host: localhost
+  port: 6334
