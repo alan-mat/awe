@@ -1,0 +1,13 @@
+nwa:
+  cmd: "add"
+  holder: "Alan Matykiewicz"
+  year: "2025"
+  license: "mit"
+  spdxids: ""
+  #skip:
+  #  - "**.go"
+  path:
+    - "internal/**/*.go"
+    - "server/**/*.go"
+    - "worker/**/*.go"
+    - "cmd/**/*.go"
