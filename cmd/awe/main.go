@@ -35,7 +35,7 @@ import (
 
 const (
 	ProgramName   = "AWE"
-	Version       = "v0.0.0"
+	Version       = "v0.0.1"
 	RepositoryUrl = "github.com/alan-mat/awe"
 )
 
