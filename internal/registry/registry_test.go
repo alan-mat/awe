@@ -19,12 +19,16 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-package registry
+package registry_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/alan-mat/awe/internal/registry"
+)
 
 func TestRegistryRegister(t *testing.T) {
-	r := New[string, any]()
+	r := registry.New[string, any]()
 
 	r.Register("one", 1)
 	r.Register("two", "zwei")
@@ -38,8 +42,8 @@ func TestRegistryRegister(t *testing.T) {
 }
 
 func TestRegistryRegisterMany(t *testing.T) {
-	r := New[string, any]()
-	entries := []Entry[string, any]{
+	r := registry.New[string, any]()
+	entries := []registry.Entry[string, any]{
 		{"test1", "a"},
 		{"test2", "b"},
 		{"test3", 3},
@@ -53,17 +57,17 @@ func TestRegistryRegisterMany(t *testing.T) {
 		}
 	}
 
-	r.RegisterMany(Entry[string, any]{"another", new([]string)})
+	r.RegisterMany(registry.Entry[string, any]{"another", new([]string)})
 	if !r.Exists("another") {
 		t.Errorf("key '%s' not found in registry", "another")
 	}
 }
 
 func TestRegistryRegisterOverwrite(t *testing.T) {
-	r := New[string, any]()
+	r := registry.New[string, any]()
 	key := "test4"
-	originalEntry := Entry[string, any]{key, "original"}
-	entries := []Entry[string, any]{
+	originalEntry := registry.Entry[string, any]{key, "original"}
+	entries := []registry.Entry[string, any]{
 		{"test1", "a"},
 		{"test2", "b"},
 		{"test3", 3},
@@ -71,7 +75,7 @@ func TestRegistryRegisterOverwrite(t *testing.T) {
 	}
 	r.RegisterMany(entries...)
 
-	newEntry := Entry[string, any]{key, "new"}
+	newEntry := registry.Entry[string, any]{key, "new"}
 	r.RegisterMany(newEntry)
 	val, ok := r.Get(key)
 	if !ok {
@@ -83,7 +87,7 @@ func TestRegistryRegisterOverwrite(t *testing.T) {
 }
 
 func TestRegistryExists(t *testing.T) {
-	r := New[string, any]()
+	r := registry.New[string, any]()
 	key := "new"
 	r.Register(key, 200)
 	if !r.Exists(key) {
@@ -96,7 +100,7 @@ func TestRegistryExists(t *testing.T) {
 }
 
 func TestRegistryGet(t *testing.T) {
-	r := New[string, any]()
+	r := registry.New[string, any]()
 	key := "test-key"
 	val := 3.1415
 	r.Register(key, val)
@@ -116,8 +120,8 @@ func TestRegistryGet(t *testing.T) {
 }
 
 func TestRegistryDelete(t *testing.T) {
-	r := New[string, any]()
-	entries := []Entry[string, any]{
+	r := registry.New[string, any]()
+	entries := []registry.Entry[string, any]{
 		{"test1", "a"},
 		{"test2", "b"},
 		{"test3", 3},
@@ -144,8 +148,8 @@ func TestRegistryDelete(t *testing.T) {
 }
 
 func TestRegistryList(t *testing.T) {
-	r := New[string, any]()
-	entries := []Entry[string, any]{
+	r := registry.New[string, any]()
+	entries := []registry.Entry[string, any]{
 		{"test1", "a"},
 		{"test2", "b"},
 		{"test3", 3},
