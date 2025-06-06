@@ -22,98 +22,88 @@
 package registry
 
 import (
-	"fmt"
-	"log/slog"
 	"sync"
-
-	"github.com/alan-mat/awe/internal/executor"
 )
 
-var (
-	executorLock sync.RWMutex
-	executors    = make(map[string]executor.Executor)
-
-	workflowLock sync.RWMutex
-	workflows    = make(map[string]*executor.Workflow)
-)
-
-func RegisterExecutor(name string, exec executor.Executor) error {
-	executorLock.Lock()
-	defer executorLock.Unlock()
-
-	if _, exists := executors[name]; exists {
-		return fmt.Errorf("failed to register, executor with name '%s' already exists", name)
-	}
-	slog.Info("registering executor", "name", name)
-	executors[name] = exec
-	return nil
+// Entry is a helper struct to pass key-value pairs to the variadic
+// Register function.
+type Entry[K comparable, V any] struct {
+	Key   K
+	Value V
 }
 
-func GetExecutor(name string) (executor.Executor, error) {
-	executorLock.RLock()
-	defer executorLock.RUnlock()
-
-	exec, exists := executors[name]
-	if !exists {
-		return nil, fmt.Errorf("executor with name '%s' does not exist", name)
-	}
-
-	return exec, nil
+// Registry is a generic, thread-safe implementation of
+// the Registry pattern.
+type Registry[K comparable, V any] struct {
+	sync.RWMutex
+	data map[K]V
 }
 
-func ListExecutors() []string {
-	executorLock.RLock()
-	defer executorLock.RUnlock()
-
-	names := make([]string, 0, len(executors))
-	for name := range executors {
-		names = append(names, name)
+// New creates and returns a new, initialized Registry.
+func New[K comparable, V any]() *Registry[K, V] {
+	return &Registry[K, V]{
+		data: make(map[K]V),
 	}
-	return names
 }
 
-func BatchRegisterWorkflows(workflows map[string]*executor.Workflow) error {
-	for name, wf := range workflows {
-		err := RegisterWorkflow(name, wf)
-		if err != nil {
-			return err
-		}
-	}
-	fmt.Println("registered workflows: ", ListWorkflows())
-	return nil
+// Register adds a single key-value pair to the registry.
+func (r *Registry[K, V]) Register(key K, val V) {
+	r.Lock()
+	defer r.Unlock()
+
+	r.data[key] = val
 }
 
-func RegisterWorkflow(name string, wf *executor.Workflow) error {
-	workflowLock.Lock()
-	defer workflowLock.Unlock()
+// RegisterMany adds one or more key-value pairs to the registry.
+// If a key already exists, its value will be overwritten.
+func (r *Registry[K, V]) RegisterMany(entries ...Entry[K, V]) {
+	r.Lock()
+	defer r.Unlock()
 
-	if _, exists := workflows[name]; exists {
-		return fmt.Errorf("failed to register, workflow with name '%s' already exists", name)
+	for _, entry := range entries {
+		r.data[entry.Key] = entry.Value
 	}
-	slog.Info("registering workflow", "name", name)
-	workflows[name] = wf
-	return nil
 }
 
-func GetWorkflow(name string) (*executor.Workflow, error) {
-	workflowLock.RLock()
-	defer workflowLock.RUnlock()
+// Exists checks if a key is present in the registry.
+func (r *Registry[K, V]) Exists(key K) bool {
+	r.RLock()
+	defer r.RUnlock()
 
-	wf, exists := workflows[name]
-	if !exists {
-		return nil, fmt.Errorf("workflow with name '%s' does not exist", name)
-	}
-
-	return wf, nil
+	_, ok := r.data[key]
+	return ok
 }
 
-func ListWorkflows() []string {
-	workflowLock.RLock()
-	defer workflowLock.RUnlock()
+// Get retrieves a value by its key.
+// It returns the value and a boolean indicating if the key was found.
+func (r *Registry[K, V]) Get(key K) (V, bool) {
+	r.RLock()
+	defer r.RUnlock()
 
-	names := make([]string, 0, len(workflows))
-	for name := range workflows {
-		names = append(names, name)
+	val, ok := r.data[key]
+	return val, ok
+}
+
+// Delete removes one or more keys from the registry.
+// It is safe to call with keys that do not exist.
+func (r *Registry[K, V]) Delete(keys ...K) {
+	r.Lock()
+	defer r.Unlock()
+
+	for _, key := range keys {
+		delete(r.data, key)
 	}
-	return names
+}
+
+// List returns a slice containing all of the keys currently
+// in the registry. The order of the keys is not guaranteed.
+func (r *Registry[K, V]) List() []K {
+	r.RLock()
+	defer r.RUnlock()
+
+	keys := make([]K, 0, len(r.data))
+	for k := range r.data {
+		keys = append(keys, k)
+	}
+	return keys
 }
