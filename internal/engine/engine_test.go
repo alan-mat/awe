@@ -37,15 +37,15 @@ func TestInvoker(t *testing.T) {
 	inv, _ := createInvoker()
 	exec := mockExecutor{"tester"}
 	expected := "executing 'tester' with query 'Name three things.'"
-	mw := func(e engine.ExecuterFunc) engine.ExecuterFunc {
-		return func(c engine.Context, p *engine.Params) *engine.Response {
+	mw := func(e engine.Executer) engine.Executer {
+		return engine.ExecuterFunc(func(c engine.Context, p *engine.Params) *engine.Response {
 			resp := e.Execute(c, p)
 			got := resp.State.Contents.Messages[0].Text()
 			if got != expected {
 				t.Errorf("expected contents '%s', got '%s'", expected, got)
 			}
 			return resp
-		}
+		})
 	}
 	err := inv.Call(mw(engine.ExecuterFunc(exec.Execute)), engine.DefaultParams())
 	if err != nil {
@@ -65,6 +65,85 @@ func TestInvokerError(t *testing.T) {
 	err = inv.Call(engine.ExecuterFunc(executerErrorOnNeg(-1)), engine.DefaultParams())
 	if err == nil {
 		t.Errorf("expected error, got %v", err)
+	}
+}
+
+func TestInvokerWithMiddleware(t *testing.T) {
+	inv, _ := createInvoker()
+	log := newLogging()
+	printer := func(e engine.Executer) engine.Executer {
+		return engine.ExecuterFunc(func(c engine.Context, p *engine.Params) *engine.Response {
+			log.Print("Running executer with query: " + c.State().Query.Text)
+			return e.Execute(c, p)
+		})
+	}
+	queryInterceptor := func(e engine.Executer) engine.Executer {
+		return engine.ExecuterFunc(func(c engine.Context, p *engine.Params) *engine.Response {
+			state := c.State()
+			state.Query = engine.TextQuery("modified query.")
+			return e.Execute(c.WithState(state), p)
+		})
+	}
+	logger := func(e engine.Executer) engine.Executer {
+		return engine.ExecuterFunc(func(c engine.Context, p *engine.Params) *engine.Response {
+			status := "SUCCESS"
+			resp := e.Execute(c, p)
+			if resp.Err != nil {
+				status = "FAILED"
+			}
+			log.Print(fmt.Sprintf("%s %s (%s) %v", status, c.ID(), c.WorkflowID(), "400ns"))
+			return resp
+		})
+	}
+
+	// middleware ordering
+	// printer before query interceptor
+	// must print initial query
+	inv.Use(
+		printer,
+		logger,
+		queryInterceptor,
+	)
+	err := inv.Call(executerErrorOnNeg(1), engine.DefaultParams())
+	if err != nil {
+		t.Errorf("expected not-nil error, got %v", err)
+	}
+	expected := []string{"Running executer with query: Name three things.", "SUCCESS task-001 (workflow-001) 400ns"}
+	got := log.GetAll()
+	if !reflect.DeepEqual(got, expected) {
+		t.Errorf("expected '%v', got '%v'", expected, got)
+	}
+
+	// printer after query interceptor
+	// must print the query set by the interceptor
+	inv, _ = createInvoker()
+	log.Reset()
+	inv.Use(
+		logger,
+		queryInterceptor,
+		printer,
+	)
+	err = inv.Call(executerErrorOnNeg(1), engine.DefaultParams())
+	if err != nil {
+		t.Errorf("expected not-nil error, got %v", err)
+	}
+	expected = []string{"Running executer with query: modified query.", "SUCCESS task-001 (workflow-001) 400ns"}
+	got = log.GetAll()
+	if !reflect.DeepEqual(got, expected) {
+		t.Errorf("expected '%v', got '%v'", expected, got)
+	}
+
+	// invoker error
+	// logger must print FAILED instead of SUCCESS
+	log.Reset()
+	err = inv.Call(executerErrorOnNeg(-1), engine.DefaultParams())
+	if err == nil {
+		t.Errorf("expected invoker error, got %v", err)
+	}
+	expected = []string{"Running executer with query: modified query.", "FAILED task-001 (workflow-001) 400ns"}
+	got = log.GetAll()
+	if !reflect.DeepEqual(got, expected) {
+		t.Errorf("expected '%v', got '%v'", expected, got)
 	}
 }
 
@@ -314,6 +393,28 @@ func createInvoker() (*engine.Invoker, engine.Context) {
 	)
 	invoker := engine.NewInvoker(c)
 	return invoker, c
+}
+
+type logging struct {
+	logs []string
+}
+
+func newLogging() *logging {
+	return &logging{
+		logs: make([]string, 0),
+	}
+}
+
+func (l *logging) Print(msg string) {
+	l.logs = append(l.logs, msg)
+}
+
+func (l *logging) GetAll() []string {
+	return l.logs
+}
+
+func (l *logging) Reset() {
+	l.logs = l.logs[:0]
 }
 
 type mockExecutor struct {

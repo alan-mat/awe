@@ -39,10 +39,11 @@ func (f ExecuterFunc) Execute(c Context, p *Params) *Response {
 	return f(c, p)
 }
 
-type Middleware func(ExecuterFunc) ExecuterFunc
+type Middleware func(Executer) Executer
 
 type Invoker struct {
-	context Context
+	context    Context
+	middleware []Middleware
 }
 
 func NewInvoker(context Context) *Invoker {
@@ -51,7 +52,16 @@ func NewInvoker(context Context) *Invoker {
 	}
 }
 
-func (i *Invoker) Call(e Executer, p *Params) error {
+func (i *Invoker) Use(middleware ...Middleware) {
+	i.middleware = append(i.middleware, middleware...)
+}
+
+func (i *Invoker) Call(executer Executer, p *Params) error {
+	var e Executer = executer
+	for idx := len(i.middleware) - 1; idx >= 0; idx-- {
+		e = i.middleware[idx](e)
+	}
+
 	resp := e.Execute(i.context, p)
 	if resp.Err != nil {
 		return InvokeError{Cause: resp.Err}
