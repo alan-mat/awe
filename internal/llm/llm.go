@@ -27,6 +27,18 @@ type Message struct {
 	Parts []MessagePart
 }
 
+// Text returns all the text parts of a Message.
+func (m Message) Text() string {
+	out := ""
+	for _, p := range m.Parts {
+		if p.Type == MessagePartTypeText {
+			t, _ := p.Text()
+			out += t
+		}
+	}
+	return out
+}
+
 // TextMessage is a helper function that returns a Message
 // with a single text part.
 func TextMessage(role MessageRole, text string) Message {

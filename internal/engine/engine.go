@@ -39,7 +39,7 @@ func (f ExecuterFunc) Execute(c Context, p *Params) *Response {
 	return f(c, p)
 }
 
-type Middleware func(Executer) Executer
+type Middleware func(ExecuterFunc) ExecuterFunc
 
 type Invoker struct {
 	context Context
@@ -57,12 +57,7 @@ func (i *Invoker) Call(e Executer, p *Params) error {
 		return InvokeError{Cause: resp.Err}
 	}
 
-	if resp.State == nil {
-		return InvokeError{Cause: ErrInvalidState}
-	}
-
 	i.context = i.context.WithState(resp.State)
-
 	return nil
 }
 
@@ -76,7 +71,7 @@ type Context struct {
 	originalQuery Query
 	caller        CallerMeta
 
-	state *State
+	state State
 
 	values map[string]any
 }
@@ -116,7 +111,7 @@ func (c Context) Caller() CallerMeta {
 	return c.caller
 }
 
-func (c Context) State() *State {
+func (c Context) State() State {
 	return c.state
 }
 
@@ -124,7 +119,7 @@ func (c Context) Value(key string) any {
 	return c.values[key]
 }
 
-func (c Context) WithState(state *State) Context {
+func (c Context) WithState(state State) Context {
 	c.state = state
 	return c
 }
@@ -149,32 +144,28 @@ type State struct {
 	Query        Query
 	QueryHistory QueryList
 
-	Contents    *GeneratedContents
+	Contents    GeneratedContents
 	ContextDocs []*api.ScoredDocument
 
-	TransformedQuery *Query
-	MultiQueries     *QueryList
-	SubQueries       *QueryList
+	MultiQueries *QueryList
+	SubQueries   *QueryList
 }
 
-func NewState(initialQuery Query) *State {
-	state := new(State)
+func NewState(initialQuery Query) State {
+	state := State{}
 	state.Query = initialQuery
 	state.QueryHistory = make(QueryList, 0)
+	state.Contents = GeneratedContents{}
 
 	return state
 }
 
-func (s *State) AddContents(contents *GeneratedContents) {
-	if contents == nil {
-		return
-	}
+func (s *State) AddToHistory(queries ...Query) {
+	s.QueryHistory = append(s.QueryHistory, queries...)
+}
 
-	if s.Contents == nil {
-		s.Contents = contents
-	} else {
-		s.Contents.Messages = append(s.Contents.Messages, contents.Messages...)
-	}
+func (s *State) AddContents(contents *GeneratedContents) {
+	s.Contents.Merge(contents)
 }
 
 func (s *State) AddContextDocs(docs ...*api.ScoredDocument) {
@@ -184,6 +175,52 @@ func (s *State) AddContextDocs(docs ...*api.ScoredDocument) {
 	s.ContextDocs = append(s.ContextDocs, docs...)
 }
 
+func (s *State) AddMultiQueries(queries ...Query) {
+	if len(queries) == 0 {
+		return
+	}
+
+	if s.MultiQueries == nil {
+		list := QueryList(queries)
+		s.MultiQueries = &list
+	} else {
+		*s.MultiQueries = append(*s.MultiQueries, queries...)
+	}
+}
+
+func (s *State) AddSubQueries(queries ...Query) {
+	if len(queries) == 0 {
+		return
+	}
+
+	if s.SubQueries == nil {
+		list := QueryList(queries)
+		s.SubQueries = &list
+	} else {
+		*s.SubQueries = append(*s.SubQueries, queries...)
+	}
+}
+
+func (s *State) Merge(states ...*State) {
+	for _, state := range states {
+		s.QueryHistory = append(s.QueryHistory, state.QueryHistory...)
+		s.Contents.Merge(&state.Contents)
+		s.ContextDocs = append(s.ContextDocs, state.ContextDocs...)
+
+		if s.MultiQueries == nil && state.MultiQueries != nil {
+			s.MultiQueries = state.MultiQueries
+		} else if s.MultiQueries != nil && state.MultiQueries != nil {
+			*s.MultiQueries = append(*s.MultiQueries, *state.MultiQueries...)
+		}
+
+		if s.SubQueries == nil && state.SubQueries != nil {
+			s.SubQueries = state.SubQueries
+		} else if s.SubQueries != nil && state.SubQueries != nil {
+			*s.SubQueries = append(*s.SubQueries, *state.SubQueries...)
+		}
+	}
+}
+
 type GeneratedContents struct {
 	Messages []llm.Message
 }
@@ -191,6 +228,12 @@ type GeneratedContents struct {
 func ContentsFromMessages(messages ...llm.Message) *GeneratedContents {
 	contents := &GeneratedContents{Messages: messages}
 	return contents
+}
+
+func (c *GeneratedContents) Merge(contents ...*GeneratedContents) {
+	for _, content := range contents {
+		c.Messages = append(c.Messages, content.Messages...)
+	}
 }
 
 type Query struct {
@@ -215,6 +258,13 @@ type Params struct {
 	Branches []*WorkflowBranch
 }
 
+func (p Params) SetArgument(key string, val any) {
+	if p.Args == nil {
+		p.Args = make(Arguments)
+	}
+	p.Args[key] = val
+}
+
 func DefaultParams() *Params {
 	return &Params{
 		Args: make(Arguments),
@@ -222,6 +272,30 @@ func DefaultParams() *Params {
 }
 
 type Arguments map[string]any
+
+func GetTypedArgument[T any](args Arguments, name string) (T, bool) {
+	arg, ok := args[name]
+	if !ok {
+		return *new(T), false
+	}
+
+	typedArg, ok := arg.(T)
+	return typedArg, ok
+}
+
+func GetTypedArgumentWithDefault[T any](args Arguments, name string, defaultValue T) T {
+	arg, ok := args[name]
+	if !ok {
+		return defaultValue
+	}
+
+	typedArg, ok := arg.(T)
+	if !ok {
+		return defaultValue
+	}
+
+	return typedArg
+}
 
 // Response contains the execution response from an [Executor].
 type Response struct {
@@ -234,5 +308,5 @@ type Response struct {
 	// Executers are responsible for returning valid new state,
 	// according to its execution results. Corrupted state may result in
 	// failed invocations of furhter Executors.
-	State *State
+	State State
 }
