@@ -41,3 +41,20 @@ func (e InvokeError) Error() string {
 func (e InvokeError) Unwrap() error {
 	return e.Cause
 }
+
+type ModuleNotFoundError struct {
+	ModuleName string
+}
+
+func (e ModuleNotFoundError) Error() string {
+	return fmt.Sprintf("module '%s' not found", e.ModuleName)
+}
+
+type OperatorNotFoundError struct {
+	ModuleName   string
+	OperatorName string
+}
+
+func (e OperatorNotFoundError) Error() string {
+	return fmt.Sprintf("operator '%s' not found for module '%s'", e.OperatorName, e.ModuleName)
+}

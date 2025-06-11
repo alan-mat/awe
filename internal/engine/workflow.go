@@ -21,11 +21,20 @@
 
 package engine
 
-type WorkflowNode struct {
-	Module   string
-	Operator string
+type WorkflowNodeType string
 
-	NodeType string
+const (
+	WorkflowNodeLinear      WorkflowNodeType = "linear"
+	WorkflowNodeLoop        WorkflowNodeType = "loop"
+	WorkflowNodeConditional WorkflowNodeType = "conditional"
+	WorkflowNodeBranching   WorkflowNodeType = "branching"
+)
+
+type WorkflowNode struct {
+	Module       Module
+	OperatorName string
+
+	NodeType WorkflowNodeType
 	Args     map[string]any
 
 	Children []*WorkflowNode
@@ -33,11 +42,11 @@ type WorkflowNode struct {
 	Branches []*WorkflowBranch
 }
 
-func NewWorkflowNode(module string, operator string, nodeType string) *WorkflowNode {
+func NewWorkflowNode(module Module, operatorName string, nodeType WorkflowNodeType) *WorkflowNode {
 	node := &WorkflowNode{
-		Module:   module,
-		Operator: operator,
-		NodeType: nodeType,
+		Module:       module,
+		OperatorName: operatorName,
+		NodeType:     nodeType,
 	}
 	return node
 }
@@ -74,4 +83,43 @@ func NewWorkflow(
 		nodes:          nodes,
 	}
 	return workflow
+}
+
+func (w Workflow) Executer(t Transport) ExecuterFunc {
+	nodes := w.nodes
+	nodeIdx := 0
+
+	return func(c Context, p *Params) *Response {
+		inv := NewInvoker(c)
+		if t != nil {
+			inv.Use(TransportGenerationMiddleware(t, c.TaskId()))
+		}
+
+		for {
+			node := nodes[nodeIdx]
+			nodeParams := &Params{
+				Args:     node.Args,
+				Children: node.Children,
+				Branches: node.Branches,
+				Routes:   node.Routes,
+			}
+
+			op, err := node.Module.Operator(node.OperatorName)
+			if err != nil {
+				return ErrorResponse(inv.State(), err)
+			}
+
+			err = inv.Call(op, nodeParams)
+			if err != nil {
+				return ErrorResponse(inv.State(), err)
+			}
+
+			nodeIdx += 1
+			if nodeIdx >= len(nodes) {
+				break
+			}
+		}
+
+		return &Response{State: inv.State()}
+	}
 }

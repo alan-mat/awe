@@ -71,6 +71,10 @@ func (i *Invoker) Call(executer Executer, p *Params) error {
 	return nil
 }
 
+func (i Invoker) State() State {
+	return i.context.State()
+}
+
 type Context struct {
 	ctx context.Context
 
@@ -105,7 +109,11 @@ func NewContext(
 	}
 }
 
-func (c Context) ID() string {
+func (c Context) Context() context.Context {
+	return c.ctx
+}
+
+func (c Context) TaskId() string {
 	return c.taskId
 }
 
@@ -319,4 +327,17 @@ type Response struct {
 	// according to its execution results. Corrupted state may result in
 	// failed invocations of furhter Executors.
 	State State
+
+	// GenerationChannel represents a read-only channel of generation data,
+	// returned by various providers. By default, Responses should return
+	// with this field set to nil. When a Response is sent with a not-nil GenerationChannel,
+	// it will contain data chunks meant to be sent over to the client using the Transport.
+	GenerationChannel <-chan GenerationEvent
+}
+
+func ErrorResponse(s State, err error) *Response {
+	return &Response{
+		State: s,
+		Err:   err,
+	}
 }

@@ -91,7 +91,7 @@ func TestInvokerWithMiddleware(t *testing.T) {
 			if resp.Err != nil {
 				status = "FAILED"
 			}
-			log.Print(fmt.Sprintf("%s %s (%s) %v", status, c.ID(), c.WorkflowID(), "400ns"))
+			log.Print(fmt.Sprintf("%s %s (%s) %v", status, c.TaskId(), c.WorkflowID(), "400ns"))
 			return resp
 		})
 	}
