@@ -75,6 +75,36 @@ func (i Invoker) State() State {
 	return i.context.State()
 }
 
+// NextRoute returns the nextRoute from state, either a not-nil string value or nil.
+// If nextRoute was a not-nil value, it will be reset to nil after
+// a call to this method.
+func (i *Invoker) NextRoute() *string {
+	state := i.State()
+	nextRoute := state.nextRoute
+	if nextRoute != nil {
+		defer func() {
+			state.nextRoute = nil
+			i.context = i.context.WithState(state)
+		}()
+	}
+	return nextRoute
+}
+
+// NextWorkflow returns the nextWorkflow from state, either a not-nil Workflow reference
+// or nil. If nextWorkflow was a not-nil value, it will be reset to nil
+// after a call to this method.
+func (i *Invoker) NextWorkflow() *Workflow {
+	state := i.State()
+	nextWorkflow := state.nextWorkflow
+	if nextWorkflow != nil {
+		defer func() {
+			state.nextWorkflow = nil
+			i.context = i.context.WithState(state)
+		}()
+	}
+	return nextWorkflow
+}
+
 type Context struct {
 	ctx context.Context
 
@@ -167,6 +197,17 @@ type State struct {
 
 	MultiQueries *QueryList
 	SubQueries   *QueryList
+
+	// nextRoute holds the route key of the next desired
+	// route, as part of a workflow.
+	// Must be set to nil upon consumption.
+	nextRoute *string
+
+	// nextWorkflow holds the next desired sub-workflow.
+	// With it, Workflow executions can be nested.
+	// Its primary use-case is for Orchestration modules,
+	// e.g. looping and branching operators.
+	nextWorkflow *Workflow
 }
 
 func NewState(initialQuery Query) State {
@@ -217,6 +258,18 @@ func (s *State) AddSubQueries(queries ...Query) {
 	} else {
 		*s.SubQueries = append(*s.SubQueries, queries...)
 	}
+}
+
+// SetNextRoute sets the nextRoute.
+// Any previous not-nil value will be overwritten.
+func (s *State) SetNextRoute(route string) {
+	s.nextRoute = &route
+}
+
+// SetNextWorkflow sets the nextWorkflow.
+// Any previous not-nil value will be overwritten.
+func (s *State) SetNextWorkflow(workflow *Workflow) {
+	s.nextWorkflow = workflow
 }
 
 func (s *State) Merge(states ...*State) {

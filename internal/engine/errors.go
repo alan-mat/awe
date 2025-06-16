@@ -27,7 +27,9 @@ import (
 )
 
 var (
-	ErrInvalidState = errors.New("invalid state")
+	ErrInvalidState      = errors.New("invalid state")
+	ErrNextRouteMissing  = errors.New("conditional node didn't set nextRoute")
+	ErrNodeRouteNotFound = errors.New("no route found for given key in workflow node")
 )
 
 type InvokeError struct {
